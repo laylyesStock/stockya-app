@@ -37,14 +37,33 @@ elif os.path.exists("PiraB.png"):
 
 st.write("---")
 
-# 4. Buscador
-col1, col2 = st.columns([3, 1]) # El botón queda al lado de los inputs
+# 4. Buscador Forzado en una Sola Fila (PC y Celular)
+st.markdown("""
+    <style>
+    /* Este código fuerza a que las columnas no se apilen en el celular */
+    [data-testid="column"] {
+        flex-direction: row !important;
+        align-items: center !important;
+        display: flex !important;
+    }
+    div[data-testid="column"]:nth-of-type(1) {
+        flex: 4 !important; /* El cuadro de texto ocupa más espacio */
+    }
+    div[data-testid="column"]:nth-of-type(2) {
+        flex: 1 !important; /* La lupa ocupa menos espacio */
+        margin-left: -20px; /* La acerca más al cuadro */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+col1, col2 = st.columns([4, 1])
 with col1:
-    cod = st.text_input("Código o Referencia").strip().upper()
+    cod = st.text_input("Código o Referencia", label_visibility="collapsed", placeholder="Buscar...").strip().upper()
 with col2:
-    st.write("##") # Espacio para alinear el botón
     buscar = st.button("🔍")
 
+# Línea divisoria para que no se pegue a los resultados
+st.write("")
 # 5. Lógica de Búsqueda Corregida
 if buscar:
     if cod:
@@ -88,6 +107,7 @@ if buscar:
             st.error(f"Error: {e}")
     else:
         st.warning("Escribe algo para buscar.")
+
 
 
 
