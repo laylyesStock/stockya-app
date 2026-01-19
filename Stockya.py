@@ -2,6 +2,11 @@ import streamlit as st
 from supabase import create_client
 import os
 
+st.set_page_config(
+    page_title="StockYa",
+    page_icon="🔍", # Puedes poner un emoji o la ruta de tu logo "PiraB.PNG"
+    layout="centered"
+)
 # 1. Configuración de Supabase
 URL = "https://darvsiqglsyfistdmweh.supabase.co"
 KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhcnZzaXFnbHN5ZmlzdGRtd2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDA2MjUsImV4cCI6MjA4MzgxNjYyNX0.4jrpYr2Sg1UC8o2Y7iMO0gbw6U8v28-eQSQrH4fXYRA"
@@ -68,6 +73,7 @@ if st.button("🔍"):
             st.error("Error en la búsqueda.")
     else:
         st.warning("Introduce un Código o Referencia.")
+
 
 
 
