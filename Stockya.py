@@ -45,7 +45,6 @@ with col2:
     st.write("##") # Espacio para alinear el botón
     buscar = st.button("🔍")
 
-# 5. Lógica de Búsqueda
 # 5. Lógica de Búsqueda Estilo Excel Lineal
 if buscar:
     if cod:
@@ -59,36 +58,34 @@ if buscar:
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
                     
-                    # Semáforo de colores
                     if cant <= 0:
-                        emoji, color_txt = "❌", "#ff4b4b" # Rojo
+                        emoji, color_txt = "❌", "#ff4b4b"
                     elif cant <= 3:
-                        emoji, color_txt = "⚠️", "#ffa500" # Naranja
+                        emoji, color_txt = "⚠️", "#ffa500"
                     else:
-                        emoji, color_txt = "✅", "#09ab3b" # Verde
+                        emoji, color_txt = "✅", "#09ab3b"
                     
-                    # Fondo alternado estilo cebra
                     fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
                     
-                    # FILA LINEAL ESTILO EXCEL (Sin el campo ubicación)
+                    # DISEÑO CON CANTIDAD MÁS CENTRADA
                     st.markdown(f"""
-                        <div style="background-color: {fondo}; padding: 8px 10px; border: 1px solid #eee; font-family: sans-serif; font-size: 0.9em; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;">
+                        <div style="background-color: {fondo}; padding: 8px 10px; border: 1px solid #eee; display: flex; align-items: center; font-family: sans-serif; font-size: 0.9em;">
+                            <div style="flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                 <strong>{tienda}</strong> | {desc}
                             </div>
-                            <div style="color: {color_txt}; font-weight: bold; white-space: nowrap;">
+                            <div style="flex: 1; text-align: left; padding-left: 20px; color: {color_txt}; font-weight: bold; white-space: nowrap;">
                                 {emoji} {cant}
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
             else:
-                # AQUÍ USAMOS TU FRASE: Solo sale si no hay coincidencias
-                st.warning("📍 Sin ubicación (No se encontraron resultados para esta búsqueda)")
+                st.warning("📍 Sin ubicación (No se encontraron resultados)")
                 
         except Exception as e:
-            st.error("Error de conexión con la base de datos.")
+            st.error("Error de conexión.")
     else:
-        st.warning("Por favor, escribe un código o referencia.")
+        st.warning("Escribe algo.")
+
 
 
 
