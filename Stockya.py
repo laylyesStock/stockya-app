@@ -21,6 +21,19 @@ hide_style = """
 """
 st.markdown(hide_style, unsafe_allow_html=True)
 # ------------------------------------------------
+# 2. LIMPIEZA TOTAL (Pégalo así, pegado al margen izquierdo)
+st.markdown("""
+    <style>
+    header {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
+    #MainMenu {visibility: hidden !important;}
+    .stDeployButton {display:none !important;}
+    .viewerBadge_container__1QS13 {display:none !important;}
+    div[data-testid="stStatusWidget"] {display:none !important;}
+    /* Esto quita el espacio blanco de arriba */
+    .block-container {padding-top: 0rem !important;}
+    </style>
+""", unsafe_allow_html=True)
 
 # 2. Configuración de Supabase
 URL = "https://darvsiqglsyfistdmweh.supabase.co"
@@ -130,6 +143,7 @@ if buscar:
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
+
 
 
 
