@@ -27,6 +27,7 @@ with col1:
 with col2:
     ref = st.text_input("Referencia").strip().upper()
 
+# 4. Botón y Lógica de Búsqueda con colores y filas alternadas
 if st.button("BUSCAR"):
     if cod or ref:
         columna = "c_codarticulo" if cod else "c_Modelo"
@@ -36,25 +37,38 @@ if st.button("BUSCAR"):
             res = supabase.table("tblExistencias").select("*").ilike(columna, f"%{valor}%").execute()
             
             if res.data:
-                st.subheader("Resultados de Inventario")
-                for item in res.data:
+                st.subheader("Resultados:")
+                # Usamos enumerate para saber el número de fila y alternar color
+                for i, item in enumerate(res.data):
                     cant = int(item['n_cantidad'])
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
                     
-                    # Lógica de colores (Semáforo de stock)
+                    # Definimos el color del texto según stock
                     if cant <= 0:
-                        st.error(f"❌ {tienda} | {desc} | AGOTADO")
+                        emoji, texto_stock, color_texto = "❌", "AGOTADO", "#ff4b4b" # Rojo
                     elif cant <= 3:
-                        st.warning(f"⚠️ {tienda} | {desc} | CRÍTICO: {cant}")
+                        emoji, texto_stock, color_texto = "⚠️", f"STOCK CRÍTICO: {cant}", "#ffa500" # Naranja/Amarillo
                     else:
-                        st.success(f"✅ {tienda} | {desc} | DISPONIBLE: {cant}")
+                        emoji, texto_stock, color_texto = "✅", f"DISPONIBLE: {cant}", "#09ab3b" # Verde
+                    
+                    # Truco de color de fondo alternado (estilo Excel)
+                    fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
+                    
+                    # Dibujamos la fila con HTML
+                    st.markdown(f"""
+                        <div style="background-color: {fondo}; padding: 10px; border-radius: 5px; margin-bottom: 5px; border: 1px solid #e6e9ef;">
+                            <span style="color: #31333F; font-weight: bold;">{tienda}</span> | 
+                            <span style="color: #555;">{desc}</span> | 
+                            <span style="color: {color_texto}; font-weight: bold;">{emoji} {texto_stock}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
             else:
                 st.warning("No se encontraron coincidencias.")
         except Exception as e:
-            st.error("Error en la búsqueda. Revisa la conexión.")
+            st.error("Error en la búsqueda.")
     else:
-        st.warning("Por favor, introduce un código o referencia.")
+        st.warning("Introduce un Código o Referencia.")
 
 
 
