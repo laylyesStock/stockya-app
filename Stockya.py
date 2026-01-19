@@ -46,6 +46,7 @@ with col2:
     buscar = st.button("🔍")
 
 # 5. Lógica de Búsqueda Estilo Excel Lineal
+# 5. Lógica de Búsqueda Estilo Excel (Dos líneas + Separación de cantidad)
 if buscar:
     if cod:
         try:
@@ -67,13 +68,15 @@ if buscar:
                     
                     fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
                     
-                    # DISEÑO CON CANTIDAD MÁS CENTRADA
+                    # DISEÑO: TIENDA ARRIBA, DESCRIPCIÓN ABAJO, CANTIDAD DESPLAZADA
                     st.markdown(f"""
-                        <div style="background-color: {fondo}; padding: 8px 10px; border: 1px solid #eee; display: flex; align-items: center; font-family: sans-serif; font-size: 0.9em;">
-                            <div style="flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                <strong>{tienda}</strong> | {desc}
+                        <div style="background-color: {fondo}; padding: 10px; border: 1px solid #eee; display: flex; align-items: center; font-family: sans-serif;">
+                            <div style="flex: 2; line-height: 1.4;">
+                                <div style="font-weight: bold; font-size: 1em; color: #333;">{tienda}</div>
+                                <div style="font-size: 0.85em; color: #666;">{desc}</div>
                             </div>
-                            <div style="flex: 1; text-align: left; padding-left: 20px; color: {color_txt}; font-weight: bold; white-space: nowrap;">
+                            
+                            <div style="flex: 1; padding-left: 35px; color: {color_txt}; font-weight: bold; font-size: 1em; white-space: nowrap;">
                                 {emoji} {cant}
                             </div>
                         </div>
