@@ -2,36 +2,30 @@ import streamlit as st
 from supabase import create_client
 import os
 
-# 1. Configuración de la página (Icono y Título)
+# 1. Configuración de página y LOGO
 st.set_page_config(
     page_title="StockYa",
-    page_icon="PiraB.PNG",
+    page_icon="PiraB.PNG",  # <--- Asegúrate que el nombre sea IDÉNTICO al archivo
     layout="centered"
 )
 
-# --- TRUCO PARA OCULTAR ICONOS DE GITHUB Y MENÚ ---
-hide_style = """
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .viewerBadge_container__1QS13 {display: none !important;}
-    button[title="View source on GitHub"] {display: none !important;}
-    </style>
-"""
-st.markdown(hide_style, unsafe_allow_html=True)
-# ------------------------------------------------
-# 2. LIMPIEZA TOTAL (Pégalo así, pegado al margen izquierdo)
+# 2. LIMPIEZA TOTAL (Iconos de abajo, menú de arriba y GitHub)
 st.markdown("""
     <style>
-    header {visibility: hidden !important;}
+    /* Esconde los iconos de abajo (Made with Streamlit y GitHub) */
     footer {visibility: hidden !important;}
+    .viewerBadge_container__1QS13 {display: none !important;}
+    .stDeployButton {display: none !important;}
+    
+    /* Esconde la barra superior y el menú de 3 puntos */
+    header {visibility: hidden !important;}
     #MainMenu {visibility: hidden !important;}
-    .stDeployButton {display:none !important;}
-    .viewerBadge_container__1QS13 {display:none !important;}
-    div[data-testid="stStatusWidget"] {display:none !important;}
-    /* Esto quita el espacio blanco de arriba */
-    .block-container {padding-top: 0rem !important;}
+    
+    /* Quita espacios vacíos innecesarios */
+    .block-container {
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -143,6 +137,7 @@ if buscar:
     </style>
 """
 st.markdown(hide_style, unsafe_allow_html=True)
+
 
 
 
