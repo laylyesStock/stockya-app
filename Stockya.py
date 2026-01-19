@@ -46,45 +46,50 @@ with col2:
     buscar = st.button("🔍")
 
 # 5. Lógica de Búsqueda
+# 5. Lógica de Búsqueda Estilo Excel Lineal
 if buscar:
     if cod:
         try:
-            # Buscamos en ambas columnas para simplificarle la vida al usuario
             res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
             
             if res.data:
-                st.subheader("Inventario:")
+                st.write("### Inventario:")
                 for i, item in enumerate(res.data):
                     cant = int(item['n_cantidad'])
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
-                    ubicacion = item.get('c_ubicacion', 'Sin Ubicación')
                     
+                    # Semáforo de colores
                     if cant <= 0:
-                        emoji_stk, texto_stock, color_txt = "❌", "AGOTADO", "#ff4b4b"
+                        emoji, color_txt = "❌", "#ff4b4b" # Rojo
                     elif cant <= 3:
-                        emoji_stk, texto_stock, color_txt = "⚠️", f"CRÍTICO: {cant}", "#ffa500"
+                        emoji, color_txt = "⚠️", "#ffa500" # Naranja
                     else:
-                        emoji_stk, texto_stock, color_txt = "✅", f"STOCK: {cant}", "#09ab3b"
+                        emoji, color_txt = "✅", "#09ab3b" # Verde
                     
+                    # Fondo alternado estilo cebra
                     fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
                     
+                    # FILA LINEAL ESTILO EXCEL (Sin el campo ubicación)
                     st.markdown(f"""
-                        <div style="background-color: {fondo}; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #ddd;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <strong style="font-size: 1.1em;">{tienda}</strong>
-                                <span style="background: #31333F; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">📍 {ubicacion}</span>
+                        <div style="background-color: {fondo}; padding: 8px 10px; border: 1px solid #eee; font-family: sans-serif; font-size: 0.9em; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;">
+                                <strong>{tienda}</strong> | {desc}
                             </div>
-                            <div style="margin-top: 5px; color: #444; font-size: 0.9em;">{desc}</div>
-                            <div style="margin-top: 8px; color: {color_txt}; font-weight: bold; font-size: 1em;">{emoji_stk} {texto_stock}</div>
+                            <div style="color: {color_txt}; font-weight: bold; white-space: nowrap;">
+                                {emoji} {cant}
+                            </div>
                         </div>
                     """, unsafe_allow_html=True)
             else:
-                st.warning("No se encontró nada con ese dato.")
+                # AQUÍ USAMOS TU FRASE: Solo sale si no hay coincidencias
+                st.warning("📍 Sin ubicación (No se encontraron resultados para esta búsqueda)")
+                
         except Exception as e:
-            st.error("Error de conexión.")
+            st.error("Error de conexión con la base de datos.")
     else:
-        st.warning("Escribe algo para buscar.")
+        st.warning("Por favor, escribe un código o referencia.")
+
 
 
 
