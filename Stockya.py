@@ -4,8 +4,8 @@ import os
 
 st.set_page_config(
     page_title="StockYa",
-    page_icon="🔍", # Puedes poner un emoji o la ruta de tu logo "PiraB.PNG"
-    layout="centered"
+    page_icon="PiraB.PNG", # Esto hace que tu logo sea el icono de la App
+    layout="wide"
 )
 # 1. Configuración de Supabase
 URL = "https://darvsiqglsyfistdmweh.supabase.co"
@@ -73,6 +73,7 @@ if st.button("🔍"):
             st.error("Error en la búsqueda.")
     else:
         st.warning("Introduce un Código o Referencia.")
+
 
 
 
