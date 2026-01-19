@@ -2,77 +2,90 @@ import streamlit as st
 from supabase import create_client
 import os
 
+# 1. Configuración de la página (Icono y Título)
 st.set_page_config(
     page_title="StockYa",
-    page_icon="PiraB.PNG", # Esto hace que tu logo sea el icono de la App
-    layout="wide"
+    page_icon="PiraB.PNG",
+    layout="centered"
 )
-# 1. Configuración de Supabase
+
+# --- TRUCO PARA OCULTAR ICONOS DE GITHUB Y MENÚ ---
+hide_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .viewerBadge_container__1QS13 {display: none !important;}
+    button[title="View source on GitHub"] {display: none !important;}
+    </style>
+"""
+st.markdown(hide_style, unsafe_allow_html=True)
+# ------------------------------------------------
+
+# 2. Configuración de Supabase
 URL = "https://darvsiqglsyfistdmweh.supabase.co"
 KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhcnZzaXFnbHN5ZmlzdGRtd2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDA2MjUsImV4cCI6MjA4MzgxNjYyNX0.4jrpYr2Sg1UC8o2Y7iMO0gbw6U8v28-eQSQrH4fXYRA"
 supabase = create_client(URL, KEY)
 
-# 2. Cabecera y Logo (Solución definitiva)
+# 3. Interfaz y Logo
 st.title("StockYa ⚡")
 
-# Esto busca el archivo se llame como se llame en Git
 if os.path.exists("PiraB.PNG"):
-    st.image("PiraB.PNG", width=200)
+    st.image("PiraB.PNG", width=180)
 elif os.path.exists("PiraB.png"):
-    st.image("PiraB.png", width=200)
-else:
-    st.subheader("Pirámide C.A.") # Texto por si el logo falla
+    st.image("PiraB.png", width=180)
 
 st.write("---")
 
-# 3. Buscador
-col1, col2 = st.columns(2)
+# 4. Buscador
+col1, col2 = st.columns([3, 1]) # El botón queda al lado de los inputs
 with col1:
-    cod = st.text_input("Código").strip().upper()
+    cod = st.text_input("Código o Referencia").strip().upper()
 with col2:
-    ref = st.text_input("Referencia").strip().upper()
+    st.write("##") # Espacio para alinear el botón
+    buscar = st.button("🔍")
 
-# 4. Botón con Lupa y Lógica de Búsqueda
-if st.button("🔍"):
-    if cod or ref:
-        columna = "c_codarticulo" if cod else "c_Modelo"
-        valor = cod if cod else ref    
+# 5. Lógica de Búsqueda
+if buscar:
+    if cod:
         try:
-            res = supabase.table("tblExistencias").select("*").ilike(columna, f"%{valor}%").execute()
+            # Buscamos en ambas columnas para simplificarle la vida al usuario
+            res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
             
             if res.data:
-                st.subheader("Resultados:")
-                # Usamos enumerate para saber el número de fila y alternar color
+                st.subheader("Inventario:")
                 for i, item in enumerate(res.data):
                     cant = int(item['n_cantidad'])
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
+                    ubicacion = item.get('c_ubicacion', 'Sin Ubicación')
                     
-                    # Definimos el color del texto según stock
                     if cant <= 0:
-                        emoji, texto_stock, color_texto = "❌", "AGOTADO", "#ff4b4b" # Rojo
+                        emoji_stk, texto_stock, color_txt = "❌", "AGOTADO", "#ff4b4b"
                     elif cant <= 3:
-                        emoji, texto_stock, color_texto = "⚠️", f"STOCK CRÍTICO: {cant}", "#ffa500" # Naranja/Amarillo
+                        emoji_stk, texto_stock, color_txt = "⚠️", f"CRÍTICO: {cant}", "#ffa500"
                     else:
-                        emoji, texto_stock, color_texto = "✅", f"DISPONIBLE: {cant}", "#09ab3b" # Verde
+                        emoji_stk, texto_stock, color_txt = "✅", f"STOCK: {cant}", "#09ab3b"
                     
-                    # Truco de color de fondo alternado (estilo Excel)
                     fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
                     
-                    # Dibujamos la fila con HTML
                     st.markdown(f"""
-                        <div style="background-color: {fondo}; padding: 10px; border-radius: 5px; margin-bottom: 5px; border: 1px solid #e6e9ef;">
-                            <span style="color: #31333F; font-weight: bold;">{tienda}</span> | 
-                            <span style="color: #555;">{desc}</span> | 
-                            <span style="color: {color_texto}; font-weight: bold;">{emoji} {texto_stock}</span>
+                        <div style="background-color: {fondo}; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #ddd;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="font-size: 1.1em;">{tienda}</strong>
+                                <span style="background: #31333F; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">📍 {ubicacion}</span>
+                            </div>
+                            <div style="margin-top: 5px; color: #444; font-size: 0.9em;">{desc}</div>
+                            <div style="margin-top: 8px; color: {color_txt}; font-weight: bold; font-size: 1em;">{emoji_stk} {texto_stock}</div>
                         </div>
                     """, unsafe_allow_html=True)
             else:
-                st.warning("No se encontraron coincidencias.")
+                st.warning("No se encontró nada con ese dato.")
         except Exception as e:
-            st.error("Error en la búsqueda.")
+            st.error("Error de conexión.")
     else:
-        st.warning("Introduce un Código o Referencia.")
+        st.warning("Escribe algo para buscar.")
+
 
 
 
