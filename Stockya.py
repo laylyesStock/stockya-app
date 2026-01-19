@@ -107,6 +107,30 @@ if buscar:
             st.error(f"Error: {e}")
     else:
         st.warning("Escribe algo para buscar.")
+        # --- LIMPIEZA TOTAL DE ICONOS Y PIE DE PÁGINA ---
+    hide_style = """
+        <style>
+        /* Esconde el menú de 3 puntos y la barra superior */
+        header {visibility: hidden !important;}
+    
+      /* Esconde el pie de página de Streamlit */
+        footer {visibility: hidden !important;}
+    
+        /* Esconde el icono de GitHub (la herradura/gato) y otros botones de servicio */
+        #MainMenu {visibility: hidden !important;}
+        .viewerBadge_container__1QS13 {display: none !important;}
+        .stAppDeployButton {display: none !important;}
+        div[data-testid="stStatusWidget"] {display: none !important;}
+    
+        /* Elimina el espacio extra que dejan los elementos ocultos */
+        .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
+    </style>
+"""
+st.markdown(hide_style, unsafe_allow_html=True)
+
 
 
 
