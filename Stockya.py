@@ -27,12 +27,11 @@ with col1:
 with col2:
     ref = st.text_input("Referencia").strip().upper()
 
-# 4. Botón y Lógica de Búsqueda con colores y filas alternadas
-if st.button("BUSCAR"):
+# 4. Botón con Lupa y Lógica de Búsqueda
+if st.button("🔍"):
     if cod or ref:
         columna = "c_codarticulo" if cod else "c_Modelo"
-        valor = cod if cod else ref
-        
+        valor = cod if cod else ref    
         try:
             res = supabase.table("tblExistencias").select("*").ilike(columna, f"%{valor}%").execute()
             
@@ -69,6 +68,7 @@ if st.button("BUSCAR"):
             st.error("Error en la búsqueda.")
     else:
         st.warning("Introduce un Código o Referencia.")
+
 
 
 
