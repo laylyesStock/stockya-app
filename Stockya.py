@@ -7,9 +7,18 @@ KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRh
 
 supabase = create_client(URL, KEY)
 
-# 2. Interfaz básica
+# 2. Interfaz básica con protección de error
 st.title("StockYa ⚡")
-st.image("PiraB.png", width=200) # Asegúrate que sea .png o .PNG según lo cambiaste
+
+# Intentamos cargar la imagen solo si existe
+import os
+nombre_imagen = "PiraB.png" # <--- Asegúrate que en GitHub se llame exacto así
+
+if os.path.exists(nombre_imagen):
+    st.image(nombre_imagen, width=200)
+else:
+    st.warning("Logo no encontrado, cargando buscador...")
+
 st.write("---")
 
 col1, col2 = st.columns(2)
@@ -30,4 +39,5 @@ if st.button("BUSCAR"):
                 st.info(f"📍 {item['name_tienda']} | {item['c_descripcion']} | Cant: {int(item['n_cantidad'])}")
         else:
             st.warning("No hay resultados")
+
 
