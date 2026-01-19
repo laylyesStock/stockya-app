@@ -45,20 +45,21 @@ with col2:
     st.write("##") # Espacio para alinear el botón
     buscar = st.button("🔍")
 
-# 5. Lógica de Búsqueda Estilo Excel Lineal
-# 5. Lógica de Búsqueda Estilo Excel (Dos líneas + Separación de cantidad)
+# 5. Lógica de Búsqueda Corregida
 if buscar:
     if cod:
         try:
+            # Buscamos en ambas columnas (Código y Modelo)
             res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
             
             if res.data:
-                st.write("### Inventario:")
+                st.subheader("Resultados:")
                 for i, item in enumerate(res.data):
                     cant = int(item['n_cantidad'])
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
                     
+                    # Semáforo de colores
                     if cant <= 0:
                         emoji, color_txt = "❌", "#ff4b4b"
                     elif cant <= 3:
@@ -68,15 +69,15 @@ if buscar:
                     
                     fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
                     
-                    # DISEÑO: TIENDA ARRIBA, DESCRIPCIÓN ABAJO, CANTIDAD DESPLAZADA
+                    # DISEÑO FINAL: DOS LÍNEAS + SEPARACIÓN DE CANTIDAD
                     st.markdown(f"""
-                        <div style="background-color: {fondo}; padding: 10px; border: 1px solid #eee; display: flex; align-items: center; font-family: sans-serif;">
-                            <div style="flex: 2; line-height: 1.4;">
-                                <div style="font-weight: bold; font-size: 1em; color: #333;">{tienda}</div>
-                                <div style="font-size: 0.85em; color: #666;">{desc}</div>
+                        <div style="background-color: {fondo}; padding: 12px; border: 1px solid #eee; display: flex; align-items: center; border-radius: 5px; margin-bottom: 2px;">
+                            <div style="flex: 2;">
+                                <div style="font-weight: bold; font-size: 1.1em; color: #333; margin-bottom: 2px;">{tienda}</div>
+                                <div style="font-size: 0.9em; color: #666; line-height: 1.1;">{desc}</div>
                             </div>
                             
-                            <div style="flex: 1; padding-left: 35px; color: {color_txt}; font-weight: bold; font-size: 1em; white-space: nowrap;">
+                            <div style="flex: 1; padding-left: 40px; color: {color_txt}; font-weight: bold; font-size: 1.1em; white-space: nowrap; text-align: left;">
                                 {emoji} {cant}
                             </div>
                         </div>
@@ -85,9 +86,9 @@ if buscar:
                 st.warning("📍 Sin ubicación (No se encontraron resultados)")
                 
         except Exception as e:
-            st.error("Error de conexión.")
+            st.error(f"Error: {e}")
     else:
-        st.warning("Escribe algo.")
+        st.warning("Por favor, escribe un dato para buscar.")
 
 
 
