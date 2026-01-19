@@ -36,14 +36,26 @@ if st.button("BUSCAR"):
             res = supabase.table("tblExistencias").select("*").ilike(columna, f"%{valor}%").execute()
             
             if res.data:
+                st.subheader("Resultados de Inventario")
                 for item in res.data:
-                    st.info(f"📍 {item['name_tienda']} | {item['c_descripcion']} | Cant: {int(item['n_cantidad'])}")
+                    cant = int(item['n_cantidad'])
+                    tienda = item['name_tienda']
+                    desc = item['c_descripcion']
+                    
+                    # Lógica de colores (Semáforo de stock)
+                    if cant <= 0:
+                        st.error(f"❌ {tienda} | {desc} | AGOTADO")
+                    elif cant <= 3:
+                        st.warning(f"⚠️ {tienda} | {desc} | CRÍTICO: {cant}")
+                    else:
+                        st.success(f"✅ {tienda} | {desc} | DISPONIBLE: {cant}")
             else:
                 st.warning("No se encontraron coincidencias.")
         except Exception as e:
             st.error("Error en la búsqueda. Revisa la conexión.")
     else:
         st.warning("Por favor, introduce un código o referencia.")
+
 
 
 
