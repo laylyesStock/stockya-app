@@ -32,6 +32,22 @@ supabase = create_client(URL, KEY)
 
 # 4. Interfaz y Logo
 st.title("StockYa ⚡")
+try:
+    # Traemos la información de la tabla de control
+    res = supabase.table("control_tiendas").select("*").execute()
+    if res.data:
+        st.subheader("Estado de las Tiendas")
+        cols = st.columns(len(res.data)) # Crea una columna por cada tienda
+        
+        for i, tienda in enumerate(res.data):
+            with cols[i]:
+                st.metric(label=tienda['tienda'], 
+                          value="Online", 
+                          delta=f"Hace {tienda['ultima_actualizacion']}")
+except Exception as e:
+    st.write("Conectando con el sistema de control...")
+
+
 
 if os.path.exists("PiraB.PNG"):
     st.image("PiraB.PNG", width=180)
@@ -98,6 +114,7 @@ if buscar:
             st.error(f"Error: {e}")
     else:
         st.warning("Escribe algo para buscar.")
+
 
 
 
