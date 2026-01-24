@@ -4,7 +4,7 @@ import os
 
 # 1. Configuración de página y LOGO
 st.set_page_config(
-    page_title="StockYa",
+    page_title="StockYa (layl)",
     page_icon="PiraB.PNG",
     layout="centered"
 )
@@ -119,6 +119,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
