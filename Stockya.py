@@ -25,9 +25,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Configuración de Supabase
-URL = "https://darvsiqglsyfistdmweh.supabase.co"
-KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhcnZzaXFnbHN5ZmlzdGRtd2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDA2MjUsImV4cCI6MjA4MzgxNjYyNX0.4jrpYr2Sg1UC8o2Y7iMO0gbw6U8v28-eQSQrH4fXYRA"
+# 3. Configuración de Supabase (BLINDADO)
+URL = st.secrets["SUPABASE_URL"]
+KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
 
 # 4. Título y Estado de Tiendas (Conexión con tblcontrolexistencias)
@@ -119,6 +119,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
