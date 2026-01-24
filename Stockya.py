@@ -4,7 +4,7 @@ import os
 
 # 1. Configuración de página y LOGO
 st.set_page_config(
-    page_title="StockYa (layl)",
+    page_title="StockYa",
     page_icon="PiraB.PNG",
     layout="centered"
 )
@@ -31,7 +31,7 @@ KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRh
 supabase = create_client(URL, KEY)
 
 # 4. Título y Estado de Tiendas (Conexión con tblcontrolexistencias)
-st.title("StockYa ⚡")
+st.title("StockYa ⚡ (layl) ")
 
 try:
     # Consultamos la tabla de control que mencionas
@@ -119,6 +119,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
