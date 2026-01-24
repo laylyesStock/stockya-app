@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 2. LIMPIEZA TOTAL
+# 2. LIMPIEZA TOTAL DE INTERFAZ
 st.markdown("""
     <style>
     header {visibility: hidden !important;}
@@ -30,28 +30,29 @@ URL = "https://darvsiqglsyfistdmweh.supabase.co"
 KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhcnZzaXFnbHN5ZmlzdGRtd2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDA2MjUsImV4cCI6MjA4MzgxNjYyNX0.4jrpYr2Sg1UC8o2Y7iMO0gbw6U8v28-eQSQrH4fXYRA"
 supabase = create_client(URL, KEY)
 
-# 4. Interfaz y Estado de Tiendas
+# 4. Título y Estado de Tiendas (Conexión con tblcontrolexistencias)
 st.title("StockYa ⚡")
 
 try:
-    # Traemos la información de la tabla de control
-    res_ctrl = supabase.table("control_tiendas").select("*").execute()
+    # Consultamos la tabla de control que mencionas
+    res_ctrl = supabase.table("tblcontrolexistencias").select("*").execute()
     if res_ctrl.data:
         st.write("### Estado de las Tiendas")
         cols = st.columns(len(res_ctrl.data))
         
-        for i, tienda in enumerate(res_ctrl.data):
+        for i, t in enumerate(res_ctrl.data):
             with cols[i]:
-                # Mostramos la tienda y su última sincronización
+                # Mostramos el nombre de la tienda y la fecha de su campo 'ultimaactualizacion'
                 st.metric(
-                    label=tienda['tienda'], 
+                    label=t['tienda'], 
                     value="Online 📡", 
-                    delta=f"Act: {tienda['ultima_actualizacion']}"
+                    delta=f"Actualizado: {t['ultimaactualizacion']}"
                 )
-except Exception as e:
-    st.info("Sincronizando reloj de tiendas...")
+except Exception:
+    # Si la tabla está vacía o no existe aún, se salta silenciosamente
+    pass
 
-# Mostrar Logo
+# Logo
 if os.path.exists("PiraB.PNG"):
     st.image("PiraB.PNG", width=150)
 elif os.path.exists("PiraB.png"):
@@ -59,7 +60,7 @@ elif os.path.exists("PiraB.png"):
 
 st.write("---")
 
-# 5. Buscador Forzado
+# 5. Buscador Estilizado
 st.markdown("""
     <style>
     [data-testid="column"] {
@@ -78,14 +79,13 @@ with col1:
 with col2:
     buscar = st.button("🔍")
 
-# 6. Lógica de Búsqueda Mejorada
+# 6. Lógica de Búsqueda con Filtro de Existencia > 0
 if buscar and cod:
     try:
-        # Buscamos en la tabla tblExistencias
         res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res.data:
-            # --- FILTRO MÁGICO: Solo mostramos si cantidad > 0 ---
+            # FILTRO: Solo lo que tiene stock real
             items_con_stock = [item for item in res.data if int(item['n_cantidad']) > 0]
             
             if items_con_stock:
@@ -95,7 +95,7 @@ if buscar and cod:
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
                     
-                    # Semáforo de stock
+                    # Semáforo: Naranja para poco stock, Verde para suficiente
                     if cant <= 3: emoji, color_txt = "⚠️", "#ffa500"
                     else: emoji, color_txt = "✅", "#09ab3b"
                     
@@ -118,9 +118,8 @@ if buscar and cod:
         else:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
-        st.error(f"Error en la consulta: {e}")
-elif buscar and not cod:
-    st.warning("Escribe algo para buscar.")
+        st.error(f"Error: {e}")
+
 
 
 
