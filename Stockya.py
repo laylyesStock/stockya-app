@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 2. LIMPIEZA TOTAL (Al principio para que no falle)
+# 2. LIMPIEZA TOTAL
 st.markdown("""
     <style>
     header {visibility: hidden !important;}
@@ -19,7 +19,7 @@ st.markdown("""
     .viewerBadge_container__1QS13 {display:none !important;}
     div[data-testid="stStatusWidget"] {display:none !important;}
     .block-container {
-        padding-top: 0rem !important;
+        padding-top: 0.5rem !important;
         padding-bottom: 0rem !important;
     }
     </style>
@@ -30,33 +30,36 @@ URL = "https://darvsiqglsyfistdmweh.supabase.co"
 KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhcnZzaXFnbHN5ZmlzdGRtd2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDA2MjUsImV4cCI6MjA4MzgxNjYyNX0.4jrpYr2Sg1UC8o2Y7iMO0gbw6U8v28-eQSQrH4fXYRA"
 supabase = create_client(URL, KEY)
 
-# 4. Interfaz y Logo
+# 4. Interfaz y Estado de Tiendas
 st.title("StockYa ⚡")
+
 try:
     # Traemos la información de la tabla de control
-    res = supabase.table("control_tiendas").select("*").execute()
-    if res.data:
-        st.subheader("Estado de las Tiendas")
-        cols = st.columns(len(res.data)) # Crea una columna por cada tienda
+    res_ctrl = supabase.table("control_tiendas").select("*").execute()
+    if res_ctrl.data:
+        st.write("### Estado de las Tiendas")
+        cols = st.columns(len(res_ctrl.data))
         
-        for i, tienda in enumerate(res.data):
+        for i, tienda in enumerate(res_ctrl.data):
             with cols[i]:
-                st.metric(label=tienda['tienda'], 
-                          value="Online", 
-                          delta=f"Hace {tienda['ultima_actualizacion']}")
+                # Mostramos la tienda y su última sincronización
+                st.metric(
+                    label=tienda['tienda'], 
+                    value="Online 📡", 
+                    delta=f"Act: {tienda['ultima_actualizacion']}"
+                )
 except Exception as e:
-    st.write("Conectando con el sistema de control...")
+    st.info("Sincronizando reloj de tiendas...")
 
-
-
+# Mostrar Logo
 if os.path.exists("PiraB.PNG"):
-    st.image("PiraB.PNG", width=180)
+    st.image("PiraB.PNG", width=150)
 elif os.path.exists("PiraB.png"):
-    st.image("PiraB.png", width=180)
+    st.image("PiraB.png", width=150)
 
 st.write("---")
 
-# 5. Buscador Forzado en una Sola Fila
+# 5. Buscador Forzado
 st.markdown("""
     <style>
     [data-testid="column"] {
@@ -75,23 +78,25 @@ with col1:
 with col2:
     buscar = st.button("🔍")
 
-st.write("")
-
-# 6. Lógica de Búsqueda
-if buscar:
-    if cod:
-        try:
-            res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
+# 6. Lógica de Búsqueda Mejorada
+if buscar and cod:
+    try:
+        # Buscamos en la tabla tblExistencias
+        res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
+        
+        if res.data:
+            # --- FILTRO MÁGICO: Solo mostramos si cantidad > 0 ---
+            items_con_stock = [item for item in res.data if int(item['n_cantidad']) > 0]
             
-            if res.data:
+            if items_con_stock:
                 st.subheader("Resultados:")
-                for i, item in enumerate(res.data):
+                for i, item in enumerate(items_con_stock):
                     cant = int(item['n_cantidad'])
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
                     
-                    if cant <= 0: emoji, color_txt = "❌", "#ff4b4b"
-                    elif cant <= 3: emoji, color_txt = "⚠️", "#ffa500"
+                    # Semáforo de stock
+                    if cant <= 3: emoji, color_txt = "⚠️", "#ffa500"
                     else: emoji, color_txt = "✅", "#09ab3b"
                     
                     fondo = "#f0f2f6" if i % 2 == 0 else "#ffffff"
@@ -109,11 +114,13 @@ if buscar:
                     """
                     st.markdown(html_fila, unsafe_allow_html=True)
             else:
-                st.warning("📍 Sin ubicación (No se encontraron resultados)")
-        except Exception as e:
-            st.error(f"Error: {e}")
-    else:
-        st.warning("Escribe algo para buscar.")
+                st.warning("📍 Sin stock disponible en ninguna tienda.")
+        else:
+            st.warning("📍 Producto no encontrado.")
+    except Exception as e:
+        st.error(f"Error en la consulta: {e}")
+elif buscar and not cod:
+    st.warning("Escribe algo para buscar.")
 
 
 
