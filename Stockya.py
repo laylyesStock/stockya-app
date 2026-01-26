@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client
+import pandas as pd
 import os
 
 # 1. Configuración de página y LOGO
@@ -30,28 +31,21 @@ URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
 
-# 4. Título y Estado de Tiendas (CORREGIDO)
+# 4. Título y Estado de Tiendas
 st.title("StockYa ⚡")
 
 try:
-    # Traemos la bitácora
     res_ctrl = supabase.table("tblcontrolexistencias").select("*").execute()
-    
     if res_ctrl.data:
         st.write("### Estado de las Tiendas")
-        # Creamos las columnas dinámicamente
         cols = st.columns(len(res_ctrl.data))
-        
         for i, t in enumerate(res_ctrl.data):
             with cols[i]:
-                # --- LIMPIEZA DE FECHA ---
-                # Pasamos de "2026-01-26T08:21:31" a "26/01 08:21 AM"
                 try:
-                    fecha_raw = t['ultimaactualizacion']
-                    fecha_dt = pd.to_datetime(fecha_raw)
+                    fecha_dt = pd.to_datetime(t['ultimaactualizacion'])
                     fecha_bonita = fecha_dt.strftime('%d/%m %I:%M %p')
                 except:
-                    fecha_bonita = t['ultimaactualizacion'] # Por si falla el formato
+                    fecha_bonita = t['ultimaactualizacion']
 
                 st.metric(
                     label=t['tienda'], 
@@ -59,9 +53,8 @@ try:
                     delta=f"Sinc: {fecha_bonita}"
                 )
 except Exception as e:
-    # Ahora sí mostramos el error si algo falla para saber qué es
-    st.error(f"Error cargando bitácora: {e}") se salta silenciosamente
-    
+    st.error(f"Error cargando bitácora: {e}")
+
 # Logo
 if os.path.exists("PiraB.PNG"):
     st.image("PiraB.PNG", width=150)
@@ -89,15 +82,12 @@ with col1:
 with col2:
     buscar = st.button("🔍")
 
-# 6. Lógica de Búsqueda con Filtro de Existencia > 0
+# 6. Lógica de Búsqueda
 if buscar and cod:
     try:
         res = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
-        
         if res.data:
-            # FILTRO: Solo lo que tiene stock real
             items_con_stock = [item for item in res.data if int(item['n_cantidad']) > 0]
-            
             if items_con_stock:
                 st.subheader("Resultados:")
                 for i, item in enumerate(items_con_stock):
@@ -105,7 +95,6 @@ if buscar and cod:
                     tienda = item['name_tienda']
                     desc = item['c_descripcion']
                     
-                    # Semáforo: Naranja para poco stock, Verde para suficiente
                     if cant <= 3: emoji, color_txt = "⚠️", "#ffa500"
                     else: emoji, color_txt = "✅", "#09ab3b"
                     
@@ -124,11 +113,12 @@ if buscar and cod:
                     """
                     st.markdown(html_fila, unsafe_allow_html=True)
             else:
-                st.warning("📍 Sin stock disponible en ninguna tienda.")
+                st.warning("📍 Sin stock disponible.")
         else:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
