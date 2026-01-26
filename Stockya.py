@@ -61,8 +61,7 @@ try:
 except Exception as e:
     # Ahora sí mostramos el error si algo falla para saber qué es
     st.error(f"Error cargando bitácora: {e}") se salta silenciosamente
-    pass
-
+    
 # Logo
 if os.path.exists("PiraB.PNG"):
     st.image("PiraB.PNG", width=150)
@@ -130,6 +129,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
