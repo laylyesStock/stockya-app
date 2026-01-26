@@ -30,26 +30,37 @@ URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
 
-# 4. Título y Estado de Tiendas (Conexión con tblcontrolexistencias)
-st.title("StockYa ⚡ (layl) ")
+# 4. Título y Estado de Tiendas (CORREGIDO)
+st.title("StockYa ⚡")
 
 try:
-    # Consultamos la tabla de control que mencionas
+    # Traemos la bitácora
     res_ctrl = supabase.table("tblcontrolexistencias").select("*").execute()
+    
     if res_ctrl.data:
         st.write("### Estado de las Tiendas")
+        # Creamos las columnas dinámicamente
         cols = st.columns(len(res_ctrl.data))
         
         for i, t in enumerate(res_ctrl.data):
             with cols[i]:
-                # Mostramos el nombre de la tienda y la fecha de su campo 'ultimaactualizacion'
+                # --- LIMPIEZA DE FECHA ---
+                # Pasamos de "2026-01-26T08:21:31" a "26/01 08:21 AM"
+                try:
+                    fecha_raw = t['ultimaactualizacion']
+                    fecha_dt = pd.to_datetime(fecha_raw)
+                    fecha_bonita = fecha_dt.strftime('%d/%m %I:%M %p')
+                except:
+                    fecha_bonita = t['ultimaactualizacion'] # Por si falla el formato
+
                 st.metric(
                     label=t['tienda'], 
                     value="Online 📡", 
-                    delta=f"Actualizado: {t['ultimaactualizacion']}"
+                    delta=f"Sinc: {fecha_bonita}"
                 )
-except Exception:
-    # Si la tabla está vacía o no existe aún, se salta silenciosamente
+except Exception as e:
+    # Ahora sí mostramos el error si algo falla para saber qué es
+    st.error(f"Error cargando bitácora: {e}") se salta silenciosamente
     pass
 
 # Logo
@@ -119,6 +130,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
