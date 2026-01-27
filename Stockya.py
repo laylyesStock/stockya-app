@@ -41,7 +41,9 @@ try:
         for i, t in enumerate(res_ctrl.data):
             with cols[i]:
                 try:
-                    fecha_dt = pd.to_datetime(t['ultimaactualizacion'])
+                    
+                    fecha_dt = pd.to_datetime(t['ultimaactualizacion']).replace(tzinfo=None)
+               
                     # --- NUEVO FORMATO CON DÍA ---
                     dias_map = {"Mon": "Lun", "Tue": "Mar", "Wed": "Mie", "Thu": "Jue", "Fri": "Vie", "Sat": "Sab", "Sun": "Dom"}
                     dia_ingles = fecha_dt.strftime('%a')
@@ -121,6 +123,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
