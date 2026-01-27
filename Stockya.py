@@ -33,7 +33,6 @@ supabase = create_client(URL, KEY)
 
 # 4. Título y Estado de Tiendas
 st.title("StockYa ⚡")
-
 try:
     res_ctrl = supabase.table("tblcontrolexistencias").select("*").execute()
     if res_ctrl.data:
@@ -43,7 +42,11 @@ try:
             with cols[i]:
                 try:
                     fecha_dt = pd.to_datetime(t['ultimaactualizacion'])
-                    fecha_bonita = fecha_dt.strftime('%d/%m %I:%M %p')
+                    # --- NUEVO FORMATO CON DÍA ---
+                    dias_map = {"Mon": "Lun", "Tue": "Mar", "Wed": "Mie", "Thu": "Jue", "Fri": "Vie", "Sat": "Sab", "Sun": "Dom"}
+                    dia_ingles = fecha_dt.strftime('%a')
+                    dia_es = dias_map.get(dia_ingles, dia_ingles)
+                    fecha_bonita = f"{dia_es} {fecha_dt.strftime('%d/%m %I:%M %p')}"
                 except:
                     fecha_bonita = t['ultimaactualizacion']
 
@@ -118,6 +121,7 @@ if buscar and cod:
             st.warning("📍 Producto no encontrado.")
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
