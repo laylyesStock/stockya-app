@@ -56,40 +56,58 @@ with col2:
     buscar = st.button("🔍")
 
 # 4. Lógica de Búsqueda y Resultados
-if cod: # Se activa al escribir o dar clic en lupa
+if cod: 
     try:
         # Traemos existencias
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
-        # Traemos la bitácora para saber las horas de sincronización
+        # Traemos la bitácora
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
 
         if res_stock.data:
-            # Solo tiendas con stock mayor a 0
             items_con_stock = [item for item in res_stock.data if int(item['n_cantidad']) > 0]
             
             if items_con_stock:
                 st.subheader("Disponibilidad:")
                 
+                # Lista de días para el formato solicitado
+                dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
+
                 for i, item in enumerate(items_con_stock):
                     tienda_nombre = item['name_tienda']
                     cant = int(item['n_cantidad'])
-                    desc = item['c_descripcion']
                     
-                    # Formatear la hora de sincronización de esta tienda
-                    raw_fecha = dict_sinc.get(tienda_nombre, "---")
-                    try:
-                        fecha_dt = pd.to_datetime(raw_fecha).replace(tzinfo=None)
-                        sinc_txt = fecha_dt.strftime('%I:%M %p')
-                    except:
-                        sinc_txt = raw_fecha
+                    # --- Lógica de Identificación Dual (Código / Modelo) ---
+                    cod_art = str(item.get('c_codarticulo', '')).strip()
+                    modelo = str(item.get('c_Modelo', '')).strip()
+                    identidad = f"{cod_art} / {modelo}" if modelo and modelo.upper() != "NONE" else cod_art
+                    desc = f"{item['c_descripcion']} ({identidad})"
+                    
+                    # --- Lógica de Fecha y Alerta Roja ---
+                    raw_fecha = dict_sinc.get(tienda_nombre, None)
+                    sinc_txt = "Sin datos"
+                    antena_emoji = "📡"
+                    color_sinc = "#888" # Gris normal
+
+                    if raw_fecha:
+                        try:
+                            fecha_dt = pd.to_datetime(raw_fecha).replace(tzinfo=None)
+                            # Verificamos si pasó más de 1 hora (alerta roja)
+                            if (pd.Timestamp.now() - fecha_dt).total_seconds() > 3600:
+                                antena_emoji = "🔴"
+                                color_sinc = "#ff4b4b" # Rojo alerta
+                            
+                            nombre_dia = dias_semana[fecha_dt.weekday()]
+                            sinc_txt = f"{antena_emoji} {nombre_dia} {fecha_dt.strftime('%d/%m/%Y %I:%M %p')}"
+                        except:
+                            sinc_txt = f"📡 {raw_fecha}"
 
                     # Colores por cantidad
                     color_txt = "#09ab3b" if cant > 3 else "#ffa500"
-                    emoji = "✅" if cant > 3 else "⚠️"
+                    emoji_stock = "✅" if cant > 3 else "⚠️"
                     
-                    # Diseño de la fila (Minimalista)
+                    # Diseño de la fila
                     fondo = "#f8f9fa" if i % 2 == 0 else "#ffffff"
                     
                     html_fila = f"""
@@ -98,10 +116,10 @@ if cod: # Se activa al escribir o dar clic en lupa
                             <div style="flex: 2;">
                                 <div style="font-weight: bold; color: #333; font-size: 1.1em;">{tienda_nombre}</div>
                                 <div style="font-size: 0.85em; color: #666;">{desc}</div>
-                                <div style="font-size: 0.8em; color: #888; margin-top: 4px;">📡 {sinc_txt}</div>
+                                <div style="font-size: 0.8em; color: {color_sinc}; margin-top: 4px; font-weight: bold;">{sinc_txt}</div>
                             </div>
                             <div style="flex: 1; text-align: right; color: {color_txt}; font-weight: bold; font-size: 1.2em;">
-                                {emoji} {cant}
+                                {emoji_stock} {cant}
                             </div>
                         </div>
                     </div>
@@ -114,6 +132,7 @@ if cod: # Se activa al escribir o dar clic en lupa
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
