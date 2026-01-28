@@ -54,6 +54,7 @@ elif os.path.exists("PiraB.png"):
 
 # LÍNEA DE SEPARACIÓN SOLICITADA
 st.markdown("---")
+st.write("")
 
 # C. Buscador
 col1, col2 = st.columns([4, 1])
@@ -132,6 +133,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
