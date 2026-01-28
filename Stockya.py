@@ -48,11 +48,16 @@ st.markdown("""
 
 # ... (Sigue igual hasta el logo) ...
 
-# B. Logo Tiendas La Pirámide con SEPARACIÓN
+# B. Logo Tiendas La Pirámide
 if os.path.exists("PiraB.PNG"):
     st.image("PiraB.PNG", width=180)
 elif os.path.exists("PiraB.png"):
     st.image("PiraB.png", width=180)
+
+# Línea de separación estética
+st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px; opacity: 0.2;'>", unsafe_allow_html=True)
+
+st.write("") # Espacio pequeño
 
 # ESTA ES LA LÍNEA DE SEPARACIÓN QUE PEDISTE
 st.markdown('<div class="separador"></div>', unsafe_allow_html=True)
@@ -158,6 +163,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
