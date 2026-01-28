@@ -1,3 +1,9 @@
+¡Ya veo qué pasó! El código se "enredó" porque quedaron instrucciones repetidas (tienes dos veces el logo y dos veces el buscador) y hay una parte donde dice # ... (Sigue igual hasta el logo) ... que es texto literario, no código, y eso rompe todo.
+
+Aquí tienes el código limpio, completo y corregido. Borra todo lo que tienes en tu archivo stocya.py y pega esto. He quitado el margen negativo que cortaba el logo y dejé una sola versión de cada cosa:
+
+Python
+
 import streamlit as st
 from supabase import create_client
 import pandas as pd
@@ -10,34 +16,19 @@ st.set_page_config(
     layout="centered"
 )
 
-# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS PROFUNDO)
+# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
-    /* 1. Eliminar barra de arriba, pie de página y botones de GitHub/Streamlit */
     header, footer, #MainMenu, .stDeployButton, #stDecoration, [data-testid="stStatusWidget"] {
         display: none !important;
         visibility: hidden !important;
     }
-    
-    /* 2. Bloqueo total de la barra de herramientas de Streamlit */
     [data-testid="stToolbar"], [data-testid="stHeader"] {
         display: none !important;
     }
-
-    /* 3. Ajuste de márgenes para que todo suba y se vea limpio */
     .block-container {
-        padding-top: 0rem !important;
-        margin-top: -50px !important;
+        padding-top: 1rem !important;
     }
-
-    /* 4. Estilo para la línea divisoria personalizada */
-    .separador {
-        border-top: 2px solid #f0f2f6;
-        margin-top: 10px;
-        margin-bottom: 20px;
-    }
-
-    /* Estilo para que la lupa y el input queden en la misma línea */
     [data-testid="column"] {
         flex-direction: row !important;
         align-items: center !important;
@@ -46,32 +37,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ... (Sigue igual hasta el logo) ...
-
-# B. Logo Tiendas La Pirámide
-if os.path.exists("PiraB.PNG"):
-    st.image("PiraB.PNG", width=180)
-elif os.path.exists("PiraB.png"):
-    st.image("PiraB.png", width=180)
-
-# --- ESTA ES LA ÚNICA LÍNEA NUEVA: LA SEPARACIÓN ---
-st.markdown("---") 
-
-st.write("") # Espacio pequeño
-
-# C. Buscador (Caja de texto + Lupa)
-col1, col2 = st.columns([4, 1])
-with col1:
-    cod = st.text_input("Buscar...", label_visibility="collapsed", placeholder="Código o Referencia").strip().upper()
-with col2:
-    buscar = st.button("🔍")
-
 # 3. Configuración de Supabase
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
 
-# --- ORDEN VISUAL SOLICITADO ---
+# --- INTERFAZ VISUAL ---
 
 # A. Título Principal
 st.title("StockYa ⚡")
@@ -82,9 +53,10 @@ if os.path.exists("PiraB.PNG"):
 elif os.path.exists("PiraB.png"):
     st.image("PiraB.png", width=180)
 
-st.write("") # Espacio pequeño
+# LÍNEA DE SEPARACIÓN SOLICITADA
+st.markdown("---")
 
-# C. Buscador (Caja de texto + Lupa)
+# C. Buscador
 col1, col2 = st.columns([4, 1])
 with col1:
     cod = st.text_input("Buscar...", label_visibility="collapsed", placeholder="Código o Referencia").strip().upper()
@@ -107,17 +79,15 @@ if cod:
             if items_con_stock:
                 st.subheader("Disponibilidad:")
                 
-                # Lista de días para el formato solicitado
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
 
                 for i, item in enumerate(items_con_stock):
                     tienda_nombre = item['name_tienda']
                     cant = int(item['n_cantidad'])
                     
-                    # --- Lógica de Identificación Dual (Código / Modelo) ---
+                    # --- Lógica de Identificación Dual ---
                     cod_art = str(item.get('c_codarticulo', '')).strip()
                     modelo = str(item.get('c_Modelo', '')).strip()
-                    # Si el modelo existe y no es "None", lo concatena
                     if modelo and modelo.upper() != "NONE" and modelo != cod_art:
                         identidad = f"{cod_art} / {modelo}"
                     else:
@@ -125,7 +95,7 @@ if cod:
                     
                     desc = f"{item['c_descripcion']} ({identidad})"
                     
-                    # --- Lógica de Fecha (Sin alerta roja) ---
+                    # --- Lógica de Fecha ---
                     raw_fecha = dict_sinc.get(tienda_nombre, None)
                     sinc_txt = "---"
 
@@ -133,16 +103,12 @@ if cod:
                         try:
                             fecha_dt = pd.to_datetime(raw_fecha).replace(tzinfo=None)
                             nombre_dia = dias_semana[fecha_dt.weekday()]
-                            # Formato: LUN 27/01/2026 03:42 PM
                             sinc_txt = f"{nombre_dia} {fecha_dt.strftime('%d/%m/%Y %I:%M %p')}"
                         except:
                             sinc_txt = raw_fecha
 
-                    # Colores por cantidad
                     color_txt = "#09ab3b" if cant > 3 else "#ffa500"
                     emoji_stock = "✅" if cant > 3 else "⚠️"
-                    
-                    # Diseño de la fila
                     fondo = "#f8f9fa" if i % 2 == 0 else "#ffffff"
                     
                     html_fila = f"""
