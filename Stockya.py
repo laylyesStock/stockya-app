@@ -1,8 +1,3 @@
-¡Ya veo qué pasó! El código se "enredó" porque quedaron instrucciones repetidas (tienes dos veces el logo y dos veces el buscador) y hay una parte donde dice # ... (Sigue igual hasta el logo) ... que es texto literario, no código, y eso rompe todo.
-
-Aquí tienes el código limpio, completo y corregido. Borra todo lo que tienes en tu archivo stocya.py y pega esto. He quitado el margen negativo que cortaba el logo y dejé una sola versión de cada cosa:
-
-Python
 
 import streamlit as st
 from supabase import create_client
@@ -133,6 +128,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
