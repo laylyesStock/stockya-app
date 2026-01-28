@@ -81,27 +81,26 @@ if cod:
                     # --- Lógica de Identificación Dual (Código / Modelo) ---
                     cod_art = str(item.get('c_codarticulo', '')).strip()
                     modelo = str(item.get('c_Modelo', '')).strip()
-                    identidad = f"{cod_art} / {modelo}" if modelo and modelo.upper() != "NONE" else cod_art
+                    # Si el modelo existe y no es "None", lo concatena
+                    if modelo and modelo.upper() != "NONE" and modelo != cod_art:
+                        identidad = f"{cod_art} / {modelo}"
+                    else:
+                        identidad = cod_art
+                    
                     desc = f"{item['c_descripcion']} ({identidad})"
                     
-                    # --- Lógica de Fecha y Alerta Roja ---
+                    # --- Lógica de Fecha (Sin alerta roja) ---
                     raw_fecha = dict_sinc.get(tienda_nombre, None)
-                    sinc_txt = "Sin datos"
-                    antena_emoji = "📡"
-                    color_sinc = "#888" # Gris normal
+                    sinc_txt = "---"
 
                     if raw_fecha:
                         try:
                             fecha_dt = pd.to_datetime(raw_fecha).replace(tzinfo=None)
-                            # Verificamos si pasó más de 1 hora (alerta roja)
-                            if (pd.Timestamp.now() - fecha_dt).total_seconds() > 3600:
-                                antena_emoji = "🔴"
-                                color_sinc = "#ff4b4b" # Rojo alerta
-                            
                             nombre_dia = dias_semana[fecha_dt.weekday()]
-                            sinc_txt = f"{antena_emoji} {nombre_dia} {fecha_dt.strftime('%d/%m/%Y %I:%M %p')}"
+                            # Formato: LUN 27/01/2026 03:42 PM
+                            sinc_txt = f"{nombre_dia} {fecha_dt.strftime('%d/%m/%Y %I:%M %p')}"
                         except:
-                            sinc_txt = f"📡 {raw_fecha}"
+                            sinc_txt = raw_fecha
 
                     # Colores por cantidad
                     color_txt = "#09ab3b" if cant > 3 else "#ffa500"
@@ -116,7 +115,7 @@ if cod:
                             <div style="flex: 2;">
                                 <div style="font-weight: bold; color: #333; font-size: 1.1em;">{tienda_nombre}</div>
                                 <div style="font-size: 0.85em; color: #666;">{desc}</div>
-                                <div style="font-size: 0.8em; color: {color_sinc}; margin-top: 4px; font-weight: bold;">{sinc_txt}</div>
+                                <div style="font-size: 0.8em; color: #888; margin-top: 4px;">📡 {sinc_txt}</div>
                             </div>
                             <div style="flex: 1; text-align: right; color: {color_txt}; font-weight: bold; font-size: 1.2em;">
                                 {emoji_stock} {cant}
