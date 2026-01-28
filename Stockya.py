@@ -14,16 +14,21 @@ st.set_page_config(
 # 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
-    header, footer, #MainMenu, .stDeployButton, #stDecoration, [data-testid="stStatusWidget"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    [data-testid="stToolbar"], [data-testid="stHeader"] {
-        display: none !important;
-    }
-    .block-container {
-        padding-top: 1rem !important;
-    }
+    /* Ocultar elementos base */
+    header, footer, .stDeployButton, #stDecoration { display: none !important; }
+    
+    /* Intentar ocultar el botón de 'Manage App' y el menú hamburguesa */
+    button[data-testid="stHeaderActionButton"] { display: none !important; }
+    #MainMenu { visibility: hidden !important; }
+    
+    /* Quitar el contenedor de la barra superior por completo */
+    div[data-testid="stToolbar"] { display: none !important; }
+    div[data-testid="stHeader"] { display: none !important; }
+
+    /* Ajuste de márgenes */
+    .block-container { padding-top: 1rem !important; }
+    
+    /* Estilo lupa y buscador */
     [data-testid="column"] {
         flex-direction: row !important;
         align-items: center !important;
@@ -31,7 +36,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
 # 3. Configuración de Supabase
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
@@ -128,6 +132,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
