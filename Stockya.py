@@ -10,24 +10,31 @@ st.set_page_config(
     layout="centered"
 )
 
-# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
+# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS PROFUNDO)
 st.markdown("""
     <style>
-    /* Ocultar barra superior y menús */
-    header {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-    #MainMenu {visibility: hidden !important;}
-    .stDeployButton {display:none !important;}
+    /* 1. Eliminar barra de arriba, pie de página y botones de GitHub/Streamlit */
+    header, footer, #MainMenu, .stDeployButton, #stDecoration, [data-testid="stStatusWidget"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
     
-    /* Ocultar los iconos de 'Manage app' y el menú de abajo en móviles */
-    #stDecoration {display:none !important;}
-    [data-testid="stStatusWidget"] {display:none !important;}
-    [data-testid="stToolbar"] {display:none !important;}
-    
-    /* Ajustar el espacio superior para que no quede un hueco blanco */
+    /* 2. Bloqueo total de la barra de herramientas de Streamlit */
+    [data-testid="stToolbar"], [data-testid="stHeader"] {
+        display: none !important;
+    }
+
+    /* 3. Ajuste de márgenes para que todo suba y se vea limpio */
     .block-container {
         padding-top: 0rem !important;
-        padding-bottom: 0rem !important;
+        margin-top: -50px !important;
+    }
+
+    /* 4. Estilo para la línea divisoria personalizada */
+    .separador {
+        border-top: 2px solid #f0f2f6;
+        margin-top: 10px;
+        margin-bottom: 20px;
     }
 
     /* Estilo para que la lupa y el input queden en la misma línea */
@@ -38,6 +45,17 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# ... (Sigue igual hasta el logo) ...
+
+# B. Logo Tiendas La Pirámide con SEPARACIÓN
+if os.path.exists("PiraB.PNG"):
+    st.image("PiraB.PNG", width=180)
+elif os.path.exists("PiraB.png"):
+    st.image("PiraB.png", width=180)
+
+# ESTA ES LA LÍNEA DE SEPARACIÓN QUE PEDISTE
+st.markdown('<div class="separador"></div>', unsafe_allow_html=True)
 
 # 3. Configuración de Supabase
 URL = st.secrets["SUPABASE_URL"]
@@ -140,6 +158,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
