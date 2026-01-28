@@ -13,14 +13,23 @@ st.set_page_config(
 # 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
+    /* Ocultar barra superior y menús */
     header {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     #MainMenu {visibility: hidden !important;}
     .stDeployButton {display:none !important;}
+    
+    /* Ocultar los iconos de 'Manage app' y el menú de abajo en móviles */
+    #stDecoration {display:none !important;}
+    [data-testid="stStatusWidget"] {display:none !important;}
+    [data-testid="stToolbar"] {display:none !important;}
+    
+    /* Ajustar el espacio superior para que no quede un hueco blanco */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0rem !important;
         padding-bottom: 0rem !important;
     }
+
     /* Estilo para que la lupa y el input queden en la misma línea */
     [data-testid="column"] {
         flex-direction: row !important;
@@ -131,6 +140,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
