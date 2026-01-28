@@ -54,13 +54,17 @@ if os.path.exists("PiraB.PNG"):
 elif os.path.exists("PiraB.png"):
     st.image("PiraB.png", width=180)
 
-# Línea de separación estética
-st.markdown("<hr style='margin-top: 0px; margin-bottom: 20px; opacity: 0.2;'>", unsafe_allow_html=True)
+# --- ESTA ES LA ÚNICA LÍNEA NUEVA: LA SEPARACIÓN ---
+st.markdown("---") 
 
 st.write("") # Espacio pequeño
 
-# ESTA ES LA LÍNEA DE SEPARACIÓN QUE PEDISTE
-st.markdown('<div class="separador"></div>', unsafe_allow_html=True)
+# C. Buscador (Caja de texto + Lupa)
+col1, col2 = st.columns([4, 1])
+with col1:
+    cod = st.text_input("Buscar...", label_visibility="collapsed", placeholder="Código o Referencia").strip().upper()
+with col2:
+    buscar = st.button("🔍")
 
 # 3. Configuración de Supabase
 URL = st.secrets["SUPABASE_URL"]
@@ -163,6 +167,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
