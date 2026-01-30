@@ -66,19 +66,34 @@ with col2:
 # 4. Lógica de Búsqueda y Resultados
 if cod: 
     try:
-        # Traemos existencias
+        # --- PASO 1: Traemos la bitácora de control primero ---
+        # Esto nos dice cuál es la "fecha válida" para cada tienda
+        res_ctrl = supabase.table("tblcontrolexistencia").select("name_tienda, Ultima_Actualizacion").execute()
+        
+        # Creamos un diccionario para búsqueda rápida: {'Distribuidora': '2026-01-30...'}
+        dict_sinc = {t['name_tienda']: t['Ultima_Actualizacion'] for t in res_ctrl.data}
+
+        # --- PASO 2: Traemos existencias ---
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
-        # Traemos la bitácora
-        res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
-        dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
-
         if res_stock.data:
-            items_con_stock = [item for item in res_stock.data if int(item['n_cantidad']) > 0]
+            # --- FILTRO BFF CRÍTICO ---
+            # Solo aceptamos el item si su fecha coincide EXACTAMENTE con la de la bitácora de su tienda
+            items_validados = []
+            for item in res_stock.data:
+                t_nombre = item['name_tienda']
+                fecha_item = item.get('Ultima_Actualizacion')
+                fecha_valida = dict_sinc.get(t_nombre)
+                
+                # Si la fecha coincide, el dato es íntegro (no es basura antigua)
+                if fecha_item and fecha_valida and fecha_item == fecha_valida:
+                    items_validados.append(item)
+
+            # Ahora trabajamos solo con los validados
+            items_con_stock = [item for item in items_validados if int(item['n_cantidad']) > 0]
             
             if items_con_stock:
                 st.subheader("Disponibilidad:")
-                
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
 
                 for i, item in enumerate(items_con_stock):
@@ -133,6 +148,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
