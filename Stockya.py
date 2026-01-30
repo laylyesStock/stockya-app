@@ -68,7 +68,7 @@ if cod:
     try:
         # --- PASO 1: Traemos la bitácora de control primero ---
         # Esto nos dice cuál es la "fecha válida" para cada tienda
-        res_ctrl = supabase.table("tblcontrolexistencia").select("name_tienda, Ultima_Actualizacion").execute()
+        res_ctrl = supabase.table("tblcontrolexistencias").select("name_tienda, Ultima_Actualizacion").execute()
         
         # Creamos un diccionario para búsqueda rápida: {'Distribuidora': '2026-01-30...'}
         dict_sinc = {t['name_tienda']: t['Ultima_Actualizacion'] for t in res_ctrl.data}
@@ -148,6 +148,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
