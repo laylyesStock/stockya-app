@@ -66,34 +66,35 @@ with col2:
 # 4. Lógica de Búsqueda y Resultados
 if cod: 
     try:
-        # --- PASO 1: Traemos la bitácora de control primero ---
-        # Esto nos dice cuál es la "fecha válida" para cada tienda
-        res_ctrl = supabase.table("tblcontrolexistencias").select("name_tienda, Ultima_Actualizacion").execute()
+        # --- PASO 1: Traemos la bitácora de control ---
+        # Usamos 'tienda' y 'ultimaactualizacion' que son los nombres reales de tu tabla
+        res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         
-        # Creamos un diccionario para búsqueda rápida: {'Distribuidora': '2026-01-30...'}
-        dict_sinc = {t['name_tienda']: t['Ultima_Actualizacion'] for t in res_ctrl.data}
+        # Creamos el diccionario con los nombres correctos: {'Distribuidora': '2026-01-30...'}
+        dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
 
         # --- PASO 2: Traemos existencias ---
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
-            # --- FILTRO BFF CRÍTICO ---
-            # Solo aceptamos el item si su fecha coincide EXACTAMENTE con la de la bitácora de su tienda
+            # --- FILTRO BFF ---
             items_validados = []
             for item in res_stock.data:
-                t_nombre = item['name_tienda']
-                fecha_item = item.get('Ultima_Actualizacion')
+                t_nombre = item['name_tienda']  # En esta tabla sí se llama name_tienda
+                fecha_item = item.get('Ultima_Actualizacion') # En esta tabla sí se llama Ultima_Actualizacion
                 fecha_valida = dict_sinc.get(t_nombre)
                 
-                # Si la fecha coincide, el dato es íntegro (no es basura antigua)
-                if fecha_item and fecha_valida and fecha_item == fecha_valida:
+                # Comparamos para validar que es el dato más reciente
+                # Usamos [:16] para comparar YYYY-MM-DD HH:MM y evitar errores por milisegundos
+                if fecha_item and fecha_valida and str(fecha_item)[:16] == str(fecha_valida)[:16]:
                     items_validados.append(item)
 
-            # Ahora trabajamos solo con los validados
+            # Ahora trabajamos solo con los validados que tengan stock
             items_con_stock = [item for item in items_validados if int(item['n_cantidad']) > 0]
             
             if items_con_stock:
                 st.subheader("Disponibilidad:")
+                
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
 
                 for i, item in enumerate(items_con_stock):
@@ -148,6 +149,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
