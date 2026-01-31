@@ -14,21 +14,12 @@ st.set_page_config(
 # 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
-    /* Ocultar elementos base */
     header, footer, .stDeployButton, #stDecoration { display: none !important; }
-    
-    /* Intentar ocultar el botón de 'Manage App' y el menú hamburguesa */
     button[data-testid="stHeaderActionButton"] { display: none !important; }
     #MainMenu { visibility: hidden !important; }
-    
-    /* Quitar el contenedor de la barra superior por completo */
     div[data-testid="stToolbar"] { display: none !important; }
     div[data-testid="stHeader"] { display: none !important; }
-
-    /* Ajuste de márgenes */
     .block-container { padding-top: 1rem !important; }
-    
-    /* Estilo lupa y buscador */
     [data-testid="column"] {
         flex-direction: row !important;
         align-items: center !important;
@@ -36,27 +27,23 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
 # 3. Configuración de Supabase
 URL = st.secrets["SUPABASE_URL"]
 KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
 
 # --- INTERFAZ VISUAL ---
-
-# A. Título Principal
 st.title("StockYa ⚡")
 
-# B. Logo Tiendas La Pirámide
 if os.path.exists("PiraB.PNG"):
     st.image("PiraB.PNG", width=180)
 elif os.path.exists("PiraB.png"):
     st.image("PiraB.png", width=180)
 
-# LÍNEA DE SEPARACIÓN SOLICITADA
 st.markdown("---")
 st.write("")
 
-# C. Buscador
 col1, col2 = st.columns([4, 1])
 with col1:
     cod = st.text_input("Buscar...", label_visibility="collapsed", placeholder="Código o Referencia").strip().upper()
@@ -67,34 +54,37 @@ with col2:
 if cod: 
     try:
         # --- PASO 1: Traemos la bitácora de control ---
-        # Usamos 'tienda' y 'ultimaactualizacion' que son los nombres reales de tu tabla
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
-        
-        # Creamos el diccionario con los nombres correctos: {'Distribuidora': '2026-01-30...'}
         dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
 
         # --- PASO 2: Traemos existencias ---
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
-            # --- FILTRO BFF ---
+            # --- FILTRO BFF EVOLUCIONADO (Integridad Total) ---
             items_validados = []
             for item in res_stock.data:
-                t_nombre = item['name_tienda']  # En esta tabla sí se llama name_tienda
-                fecha_item = item.get('Ultima_Actualizacion') # En esta tabla sí se llama Ultima_Actualizacion
-                fecha_valida = dict_sinc.get(t_nombre)
+                t_nombre = item['name_tienda']
+                fecha_item_raw = item.get('Ultima_Actualizacion')
+                fecha_valida_raw = dict_sinc.get(t_nombre)
                 
-                # Comparamos para validar que es el dato más reciente
-                # Usamos [:16] para comparar YYYY-MM-DD HH:MM y evitar errores por milisegundos
-                if fecha_item and fecha_valida and str(fecha_item)[:16] == str(fecha_valida)[:16]:
-                    items_validados.append(item)
+                if fecha_item_raw and fecha_valida_raw:
+                    try:
+                        # Convertimos a datetime de pandas (maneja todos los formatos ISO)
+                        f_item = pd.to_datetime(fecha_item_raw).replace(tzinfo=None)
+                        f_ctrl = pd.to_datetime(fecha_valida_raw).replace(tzinfo=None)
+                        
+                        # Si la diferencia es menor a 60 segundos, el dato es íntegro
+                        if abs((f_item - f_ctrl).total_seconds()) < 60:
+                            items_validados.append(item)
+                    except:
+                        continue
 
             # Ahora trabajamos solo con los validados que tengan stock
             items_con_stock = [item for item in items_validados if int(item['n_cantidad']) > 0]
             
             if items_con_stock:
                 st.subheader("Disponibilidad:")
-                
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
 
                 for i, item in enumerate(items_con_stock):
@@ -111,7 +101,7 @@ if cod:
                     
                     desc = f"{item['c_descripcion']} ({identidad})"
                     
-                    # --- Lógica de Fecha ---
+                    # --- Lógica de Fecha (Visualización) ---
                     raw_fecha = dict_sinc.get(tienda_nombre, None)
                     sinc_txt = "---"
 
@@ -149,6 +139,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
