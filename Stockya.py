@@ -14,17 +14,14 @@ st.set_page_config(
 # 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
-    header, footer, .stDeployButton, #stDecoration { display: none !important; }
-    button[data-testid="stHeaderActionButton"] { display: none !important; }
-    #MainMenu { visibility: hidden !important; }
+    /* Ocultamos lo innecesario pero dejamos que el navegador gestione la App */
+    .stDeployButton, #stDecoration { display: none !important; }
     div[data-testid="stToolbar"] { display: none !important; }
-    div[data-testid="stHeader"] { display: none !important; }
+    
+    /* En lugar de ocultar, hacemos el header transparente y pequeño */
+    header { background-color: rgba(0,0,0,0) !important; height: 1rem !important; }
+    
     .block-container { padding-top: 1rem !important; }
-    [data-testid="column"] {
-        flex-direction: row !important;
-        align-items: center !important;
-        display: flex !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -139,6 +136,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
