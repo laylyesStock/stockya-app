@@ -1,4 +1,3 @@
-
 import streamlit as st
 from supabase import create_client
 import pandas as pd
@@ -58,7 +57,7 @@ if cod:
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
-            # --- FILTRO BFF EVOLUCIONADO (Integridad Total) ---
+            # --- FILTRO BFF EVOLUCIONADO (TOLERANCIA MEJORADA) ---
             items_validados = []
             for item in res_stock.data:
                 t_nombre = item['name_tienda']
@@ -67,12 +66,15 @@ if cod:
                 
                 if fecha_item_raw and fecha_valida_raw:
                     try:
-                        # Convertimos a datetime de pandas (maneja todos los formatos ISO)
-                        f_item = pd.to_datetime(fecha_item_raw).replace(tzinfo=None)
-                        f_ctrl = pd.to_datetime(fecha_valida_raw).replace(tzinfo=None)
+                        # Convertimos y limpiamos microsegundos y zona horaria
+                        f_item = pd.to_datetime(fecha_item_raw).replace(tzinfo=None, microsecond=0)
+                        f_ctrl = pd.to_datetime(fecha_valida_raw).replace(tzinfo=None, microsecond=0)
                         
-                        # Si la diferencia es menor a 60 segundos, el dato es íntegro
-                        if abs((f_item - f_ctrl).total_seconds()) < 60:
+                        # CALCULO DE DIFERENCIA (Tolerancia de 10 minutos = 600 segundos)
+                        # Esto soluciona los desfases que vimos en Supabase entre tiendas
+                        diferencia = abs((f_item - f_ctrl).total_seconds())
+                        
+                        if diferencia < 600:
                             items_validados.append(item)
                     except:
                         continue
@@ -136,6 +138,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error en consulta: {e}")
+
 
 
 
