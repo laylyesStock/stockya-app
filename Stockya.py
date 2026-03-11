@@ -13,13 +13,9 @@ st.set_page_config(
 # 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
-    /* Ocultamos lo innecesario pero dejamos que el navegador gestione la App */
     .stDeployButton, #stDecoration { display: none !important; }
     div[data-testid="stToolbar"] { display: none !important; }
-    
-    /* En lugar de ocultar, hacemos el header transparente y pequeño */
     header { background-color: rgba(0,0,0,0) !important; height: 1rem !important; }
-    
     .block-container { padding-top: 1rem !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -38,7 +34,6 @@ elif os.path.exists("PiraB.png"):
     st.image("PiraB.png", width=180)
 
 st.markdown("---")
-st.write("")
 
 col1, col2 = st.columns([4, 1])
 with col1:
@@ -49,7 +44,7 @@ with col2:
 # 4. Lógica de Búsqueda y Resultados
 if cod: 
     try:
-        # --- PASO 1: Traemos la bitácora de control ---
+        # --- PASO 1: Bitácora de control ---
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
 
@@ -57,7 +52,6 @@ if cod:
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
-            # --- FILTRO BFF EVOLUCIONADO (TOLERANCIA MEJORADA) ---
             items_validados = []
             for item in res_stock.data:
                 t_nombre = item['name_tienda']
@@ -66,73 +60,69 @@ if cod:
                 
                 if fecha_item_raw and fecha_valida_raw:
                     try:
-                        # Convertimos y limpiamos microsegundos y zona horaria
                         f_item = pd.to_datetime(fecha_item_raw).replace(tzinfo=None, microsecond=0)
                         f_ctrl = pd.to_datetime(fecha_valida_raw).replace(tzinfo=None, microsecond=0)
-                        
-                        # CALCULO DE DIFERENCIA (Tolerancia de 10 minutos = 600 segundos)
-                        # Esto soluciona los desfases que vimos en Supabase entre tiendas
                         diferencia = abs((f_item - f_ctrl).total_seconds())
                         
-                        if diferencia < 600:
+                        if diferencia < 600: # 10 minutos
                             items_validados.append(item)
                     except:
                         continue
 
-            # Ahora trabajamos solo con los validados que tengan stock
             items_con_stock = [item for item in items_validados if int(item['n_cantidad']) > 0]
             
             if items_con_stock:
                 st.subheader("Disponibilidad:")
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
 
-                for i, item in enumerate(items_con_stock):
+                for item in items_con_stock:
+                    # Datos del Item
+                    referencia = str(item.get('c_Modelo', 'N/A')).strip()
+                    descripcion = str(item.get('c_descripcion', 'N/A')).strip()
+                    marca = str(item.get('c_Marca', 'N/A')).strip().upper()
+                    precio = float(item.get('n_Precio1', 0.0))
+                    
+                    codigo = str(item.get('c_codarticulo', 'N/A')).strip()
                     tienda_nombre = item['name_tienda']
                     cant = int(item['n_cantidad'])
                     
-                    # --- Lógica de Identificación Dual ---
-                    cod_art = str(item.get('c_codarticulo', '')).strip()
-                    modelo = str(item.get('c_Modelo', '')).strip()
-                    if modelo and modelo.upper() != "NONE" and modelo != cod_art:
-                        identidad = f"{cod_art} / {modelo}"
-                    else:
-                        identidad = cod_art
-                    
-                    desc = f"{item['c_descripcion']} ({identidad})"
-                    
-                    # --- Lógica de Fecha (Visualización) ---
+                    # Fecha de sincronización
                     raw_fecha = dict_sinc.get(tienda_nombre, None)
                     sinc_txt = "---"
-
                     if raw_fecha:
                         try:
                             fecha_dt = pd.to_datetime(raw_fecha).replace(tzinfo=None)
-                            nombre_dia = dias_semana[fecha_dt.weekday()]
-                            sinc_txt = f"{nombre_dia} {fecha_dt.strftime('%d/%m/%Y %I:%M %p')}"
+                            sinc_txt = f"{dias_semana[fecha_dt.weekday()]} {fecha_dt.strftime('%d/%m/%Y %I:%M %p')}"
                         except:
                             sinc_txt = raw_fecha
 
-                    color_txt = "#09ab3b" if cant > 3 else "#ffa500"
                     emoji_stock = "✅" if cant > 3 else "⚠️"
-                    fondo = "#f8f9fa" if i % 2 == 0 else "#ffffff"
                     
-                    html_fila = f"""
-                    <div style="background-color: {fondo}; padding: 12px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="flex: 2;">
-                                <div style="font-weight: bold; color: #333; font-size: 1.1em;">{tienda_nombre}</div>
-                                <div style="font-size: 0.85em; color: #666;">{desc}</div>
-                                <div style="font-size: 0.8em; color: #888; margin-top: 4px;">📡 {sinc_txt}</div>
-                            </div>
-                            <div style="flex: 1; text-align: right; color: {color_txt}; font-weight: bold; font-size: 1.2em;">
-                                {emoji_stock} {cant}
-                            </div>
+                    # --- DISEÑO DE DOS SECCIONES VERTICALES ---
+                    html_card = f"""
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 20px; font-family: sans-serif;">
+                        <div style="background-color: #f8f9fa; padding: 12px;">
+                            <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
+                            <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
+                            <div style="margin-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
+                            <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
+                            <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid #eee;"></div>
+                        
+                        <div style="background-color: #ffffff; padding: 12px;">
+                            <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
+                            <div style="margin-bottom: 4px;"><b>Código:</b> {codigo}</div>
+                            <div style="margin-bottom: 4px;"><b>Tienda:</b> {tienda_nombre}</div>
+                            <div style="margin-bottom: 4px; font-weight: bold; font-size: 1.1em; color: #333;">Stock: {emoji_stock} {cant}</div>
+                            <div style="margin-top: 8px; font-size: 0.8em; color: #999;"><b>Actualización:</b> {sinc_txt}</div>
                         </div>
                     </div>
                     """
-                    st.markdown(html_fila, unsafe_allow_html=True)
+                    st.markdown(html_card, unsafe_allow_html=True)
             else:
-                st.warning("📍 No hay stock disponible en ninguna tienda.")
+                st.warning("⚠️ No hay stock disponible o los datos están desactualizados (>10 min).")
         else:
             if buscar: st.error("📍 Producto no encontrado.")
             
