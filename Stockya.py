@@ -34,26 +34,26 @@ with col2:
 
 if cod:
     try:
+        # Traemos la bitácora para las fechas
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
 
+        # Buscamos el producto
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
-            # --- AGRUPACIÓN POR PRODUCTO ---
-            # Agrupamos por c_codarticulo para no repetir la cabecera
             df_resultados = pd.DataFrame(res_stock.data)
             
+            # Agrupamos por código de artículo para mostrar una sola cabecera de producto
             for cod_art, grupo in df_resultados.groupby('c_codarticulo'):
-                # Tomamos los datos del primer item del grupo para la cabecera de PRODUCTO
                 primero = grupo.iloc[0]
                 
+                # --- BLOQUE 📦 PRODUCTO ---
                 referencia = str(primero.get('c_Modelo', 'N/A')).strip()
                 descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
                 marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
                 precio = float(primero.get('n_Precio1', 0.0))
 
-                # --- DIBUJAMOS LA SECCIÓN PRODUCTO (UNA SOLA VEZ) ---
                 st.markdown(f"""
                 <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px;">
                     <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
@@ -64,7 +64,7 @@ if cod:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # --- DIBUJAMOS LAS EXISTENCIAS (UNA DEBAJO DE OTRA) ---
+                # --- BLOQUE 🏭 EXISTENCIA (PARA CADA TIENDA) ---
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                 
                 for _, fila in grupo.iterrows():
@@ -72,19 +72,19 @@ if cod:
                     cant = int(fila['n_cantidad'])
                     codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
                     
-                    # Validar tiempo de sincronización (4 horas)
+                    # Obtenemos la fecha de sincronización del diccionario de control
                     f_valida_raw = dict_sinc.get(tienda)
                     sinc_txt = "---"
-                    es_valido = False
                     
                     if f_valida_raw:
-                        f_ctrl = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
-                        ahora = pd.Timestamp.now().replace(microsecond=0)
-                        if abs((ahora - f_ctrl).total_seconds()) < 14400: # 4 horas
-                            es_valido = True
-                            sinc_txt = f"{dias_semana[f_ctrl.weekday()]} {f_ctrl.strftime('%d/%m/%Y %I:%M %p')}"
+                        try:
+                            f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
+                            sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
+                        except:
+                            sinc_txt = f_valida_raw
 
-                    if es_valido and cant > 0:
+                    # Mostramos la tienda si tiene stock > 0
+                    if cant > 0:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         st.markdown(f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px;">
@@ -96,14 +96,14 @@ if cod:
                         </div>
                         """, unsafe_allow_html=True)
                 
-                # Espacio al final de cada bloque de producto
-                st.write("")
+                st.write("") # Espacio estético entre productos diferentes
 
         else:
             if buscar: st.error("📍 Producto no encontrado.")
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
