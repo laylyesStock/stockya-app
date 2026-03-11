@@ -4,11 +4,7 @@ import pandas as pd
 import os
 
 # 1. Configuración de página
-st.set_page_config(
-    page_title="StockYa",
-    page_icon="PiraB.PNG",
-    layout="centered"
-)
+st.set_page_config(page_title="StockYa", page_icon="PiraB.PNG", layout="centered")
 
 # 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
@@ -42,7 +38,7 @@ with col2:
     buscar = st.button("🔍")
 
 # 4. Lógica de Búsqueda y Resultados
-if cod: 
+if cod:
     try:
         # --- PASO 1: Bitácora de control ---
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
@@ -64,7 +60,8 @@ if cod:
                         f_ctrl = pd.to_datetime(fecha_valida_raw).replace(tzinfo=None, microsecond=0)
                         diferencia = abs((f_item - f_ctrl).total_seconds())
                         
-                        if diferencia < 600: # 10 minutos
+                        # TOLERANCIA DE TIEMPO: 4 HORAS (14400 segundos)
+                        if diferencia < 14400:
                             items_validados.append(item)
                     except:
                         continue
@@ -76,17 +73,14 @@ if cod:
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
 
                 for item in items_con_stock:
-                    # Datos del Item
                     referencia = str(item.get('c_Modelo', 'N/A')).strip()
                     descripcion = str(item.get('c_descripcion', 'N/A')).strip()
                     marca = str(item.get('c_Marca', 'N/A')).strip().upper()
                     precio = float(item.get('n_Precio1', 0.0))
-                    
                     codigo = str(item.get('c_codarticulo', 'N/A')).strip()
                     tienda_nombre = item['name_tienda']
                     cant = int(item['n_cantidad'])
                     
-                    # Fecha de sincronización
                     raw_fecha = dict_sinc.get(tienda_nombre, None)
                     sinc_txt = "---"
                     if raw_fecha:
@@ -98,9 +92,9 @@ if cod:
 
                     emoji_stock = "✅" if cant > 3 else "⚠️"
                     
-                    # --- DISEÑO DE DOS SECCIONES VERTICALES ---
+                    # --- DISEÑO LIMPIO SIN NBSP ---
                     html_card = f"""
-                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 20px; font-family: sans-serif;">
+                    <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
                         <div style="background-color: #f8f9fa; padding: 12px;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
                             <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
@@ -108,9 +102,7 @@ if cod:
                             <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
                             <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
                         </div>
-                        
                         <div style="border-top: 1px solid #eee;"></div>
-                        
                         <div style="background-color: #ffffff; padding: 12px;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
                             <div style="margin-bottom: 4px;"><b>Código:</b> {codigo}</div>
@@ -122,13 +114,12 @@ if cod:
                     """
                     st.markdown(html_card, unsafe_allow_html=True)
             else:
-                st.warning("⚠️ No hay stock disponible o los datos están desactualizados (>10 min).")
+                st.warning("⚠️ Sin stock reciente.")
         else:
             if buscar: st.error("📍 Producto no encontrado.")
             
     except Exception as e:
-        st.error(f"Error en consulta: {e}")
-
+        st.error(f"Error: {e}")
 
 
 
