@@ -39,37 +39,34 @@ with col2:
 # 4. Lógica de Búsqueda y Resultados
 if cod:
     try:
-        # Traemos la bitácora para las fechas
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
 
-        # Buscamos el producto
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
             df_resultados = pd.DataFrame(res_stock.data)
             
-            # Agrupamos por código de artículo para mostrar una sola cabecera de producto
             for cod_art, grupo in df_resultados.groupby('c_codarticulo'):
                 primero = grupo.iloc[0]
                 
-                # --- BLOQUE 📦 PRODUCTO ---
                 referencia = str(primero.get('c_Modelo', 'N/A')).strip()
                 descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
                 marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
                 precio = float(primero.get('n_Precio1', 0.0))
 
-                st.markdown(f"""
-                <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px;">
+                # Cabecera de Producto
+                html_prod = f"""
+                <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif;">
                     <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
                     <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
                     <div style="margin-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
                     <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
                     <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                </div>"""
+                st.markdown(html_prod, unsafe_allow_html=True)
 
-                # --- BLOQUE 🏭 EXISTENCIA (PARA CADA TIENDA) ---
+                # Bloque de Existencias
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                 
                 for _, fila in grupo.iterrows():
@@ -87,33 +84,28 @@ if cod:
                         except:
                             sinc_txt = f_valida_raw
 
-                    # Mostramos la tienda si tiene stock > 0
                     if cant > 0:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
-                        st.markdown(f"""
-                        <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px;">
+                        html_exis = f"""
+                        <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
                             <div style="margin-bottom: 6px;"><b>Código:</b> {codigo_barras}</div>
-                            
-                            <div style="margin-bottom: 6px; display: block; width: 100%;">
-                                <b style="color: #333;">Tienda:</b> 
-                                <span style="color: #007bff; font-weight: bold; font-size: 1.1em;">{tienda}</span>
-                            </div>
-                            
-                            <div style="margin-bottom: 6px; font-weight: bold; font-size: 1.1em; color: #333;">Stock: {emoji_stock} {cant}</div>
+                            <div style="margin-bottom: 6px;"><b>Tienda:</b> <span style="color: #007bff; font-weight: bold;">{tienda}</span></div>
+                            <div style="margin-bottom: 6px; font-weight: bold; color: #333;">Stock: {emoji_stock} {cant}</div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888; border-top: 1px dashed #eee; padding-top: 5px;">
                                 <b>Actualización:</b> {sinc_txt}
                             </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        </div>"""
+                        st.markdown(html_exis, unsafe_allow_html=True)
                 
-                st.write("") # Espacio entre productos diferentes
+                st.write("") 
 
         else:
             if buscar: st.error("📍 Producto no encontrado.")
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
