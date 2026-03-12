@@ -6,7 +6,7 @@ import os
 # 1. Configuración de página
 st.set_page_config(page_title="StockYa", page_icon="PiraB.PNG", layout="centered")
 
-# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
+# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS) - MANTENIDO IGUAL
 st.markdown("""
     <style>
     .stDeployButton, #stDecoration { display: none !important; }
@@ -38,11 +38,20 @@ with col2:
 
 if cod:
     try:
-        # Traemos la bitácora de sincronización
+        # A. Traemos el control de sincronización
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         dict_sinc = {str(t['tienda']).strip(): t['ultimaactualizacion'] for t in res_ctrl.data}
 
-        # Buscamos el producto
+        # B. LÓGICA DE LIMPIEZA: Buscamos el ID de sesión más alto por cada tienda
+        # Esto nos dice cuál fue el "último camión" que llegó de cada sucursal
+        res_sesiones = supabase.table("tblExistencias").select("name_tienda, sesion_id").execute()
+        df_sesiones = pd.DataFrame(res_sesiones.data)
+        
+        # Diccionario con el sesion_id más nuevo de cada tienda
+        # Si una tienda no tiene sesion_id (es 0), lo tratamos como válido para no romper nada viejo
+        dict_max_sesion = df_sesiones.groupby('name_tienda')['sesion_id'].max().to_dict()
+
+        # C. Buscamos el producto solicitado
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
@@ -51,7 +60,6 @@ if cod:
             for cod_art, grupo in df_resultados.groupby('c_codarticulo'):
                 primero = grupo.iloc[0]
                 
-                # Datos del producto
                 referencia = str(primero.get('c_Modelo', 'N/A')).strip()
                 descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
                 marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
@@ -62,7 +70,7 @@ if cod:
                 except:
                     precio = 0.0
 
-                # Cabecera de Producto
+                # Cabecera (Diseño original mantenido)
                 st.markdown(f"""
                 <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif;">
                     <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
@@ -72,14 +80,21 @@ if cod:
                     <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
                 </div>""", unsafe_allow_html=True)
 
-                # Bloque de Existencias
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                 
                 for _, fila in grupo.iterrows():
                     tienda_limpia = str(fila['name_tienda']).strip()
                     cant = int(fila['n_cantidad'])
-                    codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
+                    sesion_actual = int(fila.get('sesion_id', 0))
                     
+                    # FILTRO MAESTRO: ¿Este registro pertenece al último envío de esta tienda?
+                    # Si el ID de este producto es menor al máximo de la tienda, es un "fantasma" y lo saltamos.
+                    max_id_tienda = dict_max_sesion.get(tienda_limpia, 0)
+                    
+                    if sesion_actual < max_id_tienda:
+                        continue # Esto oculta el producto que se quedó en 0 en la tienda real
+
+                    codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
                     f_valida_raw = dict_sinc.get(tienda_limpia)
                     sinc_txt = "---"
                     
@@ -90,7 +105,6 @@ if cod:
                         except:
                             sinc_txt = f_valida_raw
 
-                    # MOSTRAR SIEMPRE QUE HAYA STOCK (Sin límites de tiempo)
                     if cant > 0:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         html_exis = f"""
@@ -112,6 +126,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
