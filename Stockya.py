@@ -2,7 +2,6 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import os
-from datetime import datetime, timedelta
 
 # 1. Configuración de página
 st.set_page_config(page_title="StockYa", page_icon="PiraB.PNG", layout="centered")
@@ -37,7 +36,6 @@ with col1:
 with col2:
     buscar = st.button("🔍")
 
-# 4. Lógica de Búsqueda y Resultados
 if cod:
     try:
         # Traemos la bitácora de sincronización
@@ -53,7 +51,7 @@ if cod:
             for cod_art, grupo in df_resultados.groupby('c_codarticulo'):
                 primero = grupo.iloc[0]
                 
-                # Datos del producto con protección anti-error (Nan)
+                # Datos del producto
                 referencia = str(primero.get('c_Modelo', 'N/A')).strip()
                 descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
                 marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
@@ -84,25 +82,16 @@ if cod:
                     
                     f_valida_raw = dict_sinc.get(tienda_limpia)
                     sinc_txt = "---"
-                    dato_fresco = False
                     
                     if f_valida_raw:
                         try:
-                            # Convertimos la fecha de sincronización
                             f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
-                            ahora = datetime.now()
-                            
-                            # REGLA DE 3 HORAS: Si el reporte es más viejo que esto, se oculta
-                            # Esto soluciona el problema de que el "0" no se reporte
-                            if (ahora - f_dt).total_seconds() < 10800: 
-                                dato_fresco = True
-                            
                             sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
                         except:
                             sinc_txt = f_valida_raw
 
-                    # MOSTRAR SOLO SI TIENE STOCK Y ES RECIENTE (Solución definitiva)
-                    if cant > 0 and dato_fresco:
+                    # MOSTRAR SIEMPRE QUE HAYA STOCK (Sin límites de tiempo)
+                    if cant > 0:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif;">
