@@ -39,9 +39,11 @@ with col2:
 # 4. Lógica de Búsqueda y Resultados
 if cod:
     try:
+        # Traemos la bitácora de sincronización
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
-        dict_sinc = {t['tienda']: t['ultimaactualizacion'] for t in res_ctrl.data}
+        dict_sinc = {str(t['tienda']).strip(): t['ultimaactualizacion'] for t in res_ctrl.data}
 
+        # Buscamos el producto
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
@@ -70,14 +72,15 @@ if cod:
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                 
                 for _, fila in grupo.iterrows():
+                    # CORRECCIÓN: Definimos tienda_limpia y la usamos en todo el bloque
                     tienda_raw = fila['name_tienda']
                     tienda_limpia = str(tienda_raw).strip()     
                     
-                    #tienda = fila['name_tienda']
                     cant = int(fila['n_cantidad'])
                     codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
                     
-                    f_valida_raw = dict_sinc.get(tienda)
+                    # Buscamos la sincronización usando el nombre limpio
+                    f_valida_raw = dict_sinc.get(tienda_limpia)
                     sinc_txt = "---"
                     
                     if f_valida_raw:
@@ -89,11 +92,12 @@ if cod:
 
                     if cant > 0:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
+                        # CORRECCIÓN: Se usa tienda_limpia dentro del f-string
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
                             <div style="margin-bottom: 6px;"><b>Código:</b> {codigo_barras}</div>
-                            <div style="margin-bottom: 6px;"><b>Tienda:</b> <span style="color: #007bff; font-weight: bold;">{tienda}</span></div>
+                            <div style="margin-bottom: 6px;"><b>Tienda:</b> <span style="color: #007bff; font-weight: bold; font-size: 1.1em;">{tienda_limpia}</span></div>
                             <div style="margin-bottom: 6px; font-weight: bold; color: #333;">Stock: {emoji_stock} {cant}</div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888; border-top: 1px dashed #eee; padding-top: 5px;">
                                 <b>Actualización:</b> {sinc_txt}
@@ -108,6 +112,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
