@@ -89,10 +89,17 @@ if cod:
                         st.markdown(f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
-                            <div style="margin-bottom: 4px;"><b>Código:</b> {codigo_barras}</div>
-                            <div style="margin-bottom: 4px;"><b>Tienda:</b> {tienda}</div>
-                            <div style="margin-bottom: 4px; font-weight: bold; font-size: 1.1em; color: #333;">Stock: {emoji_stock} {cant}</div>
-                            <div style="margin-top: 8px; font-size: 0.8em; color: #999;"><b>Actualización:</b> {sinc_txt}</div>
+                            <div style="margin-bottom: 6px;"><b>Código:</b> {codigo_barras}</div>
+            
+                            <div style="margin-bottom: 6px; display: block; width: 100%;">
+                                <b style="color: #333;">Tienda:</b> 
+                                <span style="color: #007bff; font-weight: bold; font-size: 1.1em;">{tienda}</span>
+                            </div>
+            
+                            <div style="margin-bottom: 6px; font-weight: bold; font-size: 1.1em; color: #333;">Stock: {emoji_stock} {cant}</div>
+                            <div style="margin-top: 10px; font-size: 0.85em; color: #888; border-top: 1px dashed #eee; padding-top: 5px;">
+                                <b>Actualización:</b> {sinc_txt}
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
                 
@@ -103,6 +110,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
