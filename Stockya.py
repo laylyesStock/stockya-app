@@ -23,7 +23,11 @@ supabase = create_client(URL, KEY)
 
 st.title("StockYa ⚡")
 
-if os.path.exists("PiraB.PNG"): st.image("PiraB.PNG", width=180)
+if os.path.exists("PiraB.PNG"): 
+    st.image("PiraB.PNG", width=180)
+elif os.path.exists("PiraB.png"):
+    st.image("PiraB.png", width=180)
+
 st.markdown("---")
 
 col1, col2 = st.columns([4, 1])
@@ -32,6 +36,7 @@ with col1:
 with col2:
     buscar = st.button("🔍")
 
+# 4. Lógica de Búsqueda y Resultados
 if cod:
     try:
         # Traemos la bitácora para las fechas
@@ -72,7 +77,6 @@ if cod:
                     cant = int(fila['n_cantidad'])
                     codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
                     
-                    # Obtenemos la fecha de sincronización del diccionario de control
                     f_valida_raw = dict_sinc.get(tienda)
                     sinc_txt = "---"
                     
@@ -90,12 +94,12 @@ if cod:
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
                             <div style="margin-bottom: 6px;"><b>Código:</b> {codigo_barras}</div>
-            
+                            
                             <div style="margin-bottom: 6px; display: block; width: 100%;">
                                 <b style="color: #333;">Tienda:</b> 
                                 <span style="color: #007bff; font-weight: bold; font-size: 1.1em;">{tienda}</span>
                             </div>
-            
+                            
                             <div style="margin-bottom: 6px; font-weight: bold; font-size: 1.1em; color: #333;">Stock: {emoji_stock} {cant}</div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888; border-top: 1px dashed #eee; padding-top: 5px;">
                                 <b>Actualización:</b> {sinc_txt}
@@ -103,14 +107,13 @@ if cod:
                         </div>
                         """, unsafe_allow_html=True)
                 
-                st.write("") # Espacio estético entre productos diferentes
+                st.write("") # Espacio entre productos diferentes
 
         else:
             if buscar: st.error("📍 Producto no encontrado.")
             
     except Exception as e:
         st.error(f"Error: {e}")
-
 
 
 
