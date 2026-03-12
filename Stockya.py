@@ -70,7 +70,10 @@ if cod:
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                 
                 for _, fila in grupo.iterrows():
-                    tienda = fila['name_tienda']
+                    tienda_raw = fila['name_tienda']
+                    tienda_limpia = str(tienda_raw).strip()     
+                    
+                    #tienda = fila['name_tienda']
                     cant = int(fila['n_cantidad'])
                     codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
                     
@@ -105,6 +108,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
