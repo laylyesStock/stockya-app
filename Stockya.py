@@ -6,7 +6,7 @@ import os
 # 1. Configuración de página
 st.set_page_config(page_title="StockYa", page_icon="PiraB.PNG", layout="centered")
 
-# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS) - MANTENIDO IGUAL
+# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
 st.markdown("""
     <style>
     .stDeployButton, #stDecoration { display: none !important; }
@@ -38,74 +38,81 @@ with col2:
 
 if cod:
     try:
-        # A. Traemos el control de sincronización
+        # A. Bitácora de sincronización
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
         dict_sinc = {str(t['tienda']).strip(): t['ultimaactualizacion'] for t in res_ctrl.data}
 
-        # B. LÓGICA DE LIMPIEZA: Buscamos el ID de sesión más alto por cada tienda
-        # Esto nos dice cuál fue el "último camión" que llegó de cada sucursal
+        # B. Obtener IDs de sesión más recientes por tienda
         res_sesiones = supabase.table("tblExistencias").select("name_tienda, sesion_id").execute()
-        df_sesiones = pd.DataFrame(res_sesiones.data)
-        
-        # Diccionario con el sesion_id más nuevo de cada tienda
-        # Si una tienda no tiene sesion_id (es 0), lo tratamos como válido para no romper nada viejo
-        dict_max_sesion = df_sesiones.groupby('name_tienda')['sesion_id'].max().to_dict()
+        if res_sesiones.data:
+            df_sesiones = pd.DataFrame(res_sesiones.data)
+            dict_max_sesion = df_sesiones.groupby('name_tienda')['sesion_id'].max().to_dict()
+        else:
+            dict_max_sesion = {}
 
-        # C. Buscamos el producto solicitado
+        # C. Buscamos el producto
         res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
-            df_resultados = pd.DataFrame(res_stock.data)
-            
-            for cod_art, grupo in df_resultados.groupby('c_codarticulo'):
-                primero = grupo.iloc[0]
-                
-                referencia = str(primero.get('c_Modelo', 'N/A')).strip()
-                descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
-                marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
-                
-                try:
-                    val_precio = primero.get('n_Precio1')
-                    precio = float(val_precio) if val_precio and not pd.isna(val_precio) else 0.0
-                except:
-                    precio = 0.0
+            df_raw = pd.DataFrame(res_stock.data)
 
-                # Cabecera (Diseño original mantenido)
-                st.markdown(f"""
-                <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif;">
-                    <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
-                    <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
-                    <div style="margin-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
-                    <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
-                    <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
-                </div>""", unsafe_allow_html=True)
+            # --- PARCHE DE LIMPIEZA DE FANTASMAS ---
+            # Solo permitimos filas que coincidan con la última sesión de su tienda
+            def es_dato_nuevo(fila):
+                t = str(fila['name_tienda']).strip()
+                s_id = int(fila.get('sesion_id', 0))
+                # Si es la última sesión conocida de esa tienda, es válido
+                return s_id >= dict_max_sesion.get(t, 0)
 
-                dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
-                
-                for _, fila in grupo.iterrows():
-                    tienda_limpia = str(fila['name_tienda']).strip()
-                    cant = int(fila['n_cantidad'])
-                    sesion_actual = int(fila.get('sesion_id', 0))
+            df_filtrado = df_raw[df_raw.apply(es_dato_nuevo, axis=1)]
+            # Además, solo mostramos si la cantidad es mayor a 0
+            df_final = df_filtrado[df_filtrado['n_cantidad'] > 0]
+
+            if df_final.empty:
+                st.warning("📍 Producto sin existencia.")
+            else:
+                # Agrupamos por código para mostrar la cabecera del producto
+                for cod_art, grupo in df_final.groupby('c_codarticulo'):
+                    primero = grupo.iloc[0]
                     
-                    # FILTRO MAESTRO: ¿Este registro pertenece al último envío de esta tienda?
-                    # Si el ID de este producto es menor al máximo de la tienda, es un "fantasma" y lo saltamos.
-                    max_id_tienda = dict_max_sesion.get(tienda_limpia, 0)
+                    referencia = str(primero.get('c_Modelo', 'N/A')).strip()
+                    descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
+                    marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
                     
-                    if sesion_actual < max_id_tienda:
-                        continue # Esto oculta el producto que se quedó en 0 en la tienda real
+                    try:
+                        val_precio = primero.get('n_Precio1')
+                        precio = float(val_precio) if val_precio and not pd.isna(val_precio) else 0.0
+                    except:
+                        precio = 0.0
 
-                    codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
-                    f_valida_raw = dict_sinc.get(tienda_limpia)
-                    sinc_txt = "---"
+                    # Cabecera de Producto
+                    st.markdown(f"""
+                    <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif;">
+                        <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
+                        <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
+                        <div style="margin-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
+                        <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
+                        <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
+                    </div>""", unsafe_allow_html=True)
+
+                    dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                     
-                    if f_valida_raw:
-                        try:
-                            f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
-                            sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
-                        except:
-                            sinc_txt = f_valida_raw
+                    # Bloque de Existencias (Solo las válidas)
+                    for _, fila in grupo.iterrows():
+                        tienda_limpia = str(fila['name_tienda']).strip()
+                        cant = int(fila['n_cantidad'])
+                        codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
+                        
+                        f_valida_raw = dict_sinc.get(tienda_limpia)
+                        sinc_txt = "---"
+                        
+                        if f_valida_raw:
+                            try:
+                                f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
+                                sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
+                            except:
+                                sinc_txt = f_valida_raw
 
-                    if cant > 0:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif;">
@@ -118,8 +125,8 @@ if cod:
                             </div>
                         </div>"""
                         st.markdown(html_exis, unsafe_allow_html=True)
-                
-                st.write("") 
+                    
+                    st.write("") 
 
         else:
             if buscar: st.error("📍 Producto no encontrado.")
