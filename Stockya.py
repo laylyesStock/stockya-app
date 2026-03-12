@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import os
+from datetime import datetime, timedelta
 
 # 1. Configuración de página
 st.set_page_config(page_title="StockYa", page_icon="PiraB.PNG", layout="centered")
@@ -52,47 +53,57 @@ if cod:
             for cod_art, grupo in df_resultados.groupby('c_codarticulo'):
                 primero = grupo.iloc[0]
                 
+                # Datos del producto con protección anti-error (Nan)
                 referencia = str(primero.get('c_Modelo', 'N/A')).strip()
                 descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
                 marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
-                precio = float(primero.get('n_Precio1', 0.0))
+                
+                try:
+                    val_precio = primero.get('n_Precio1')
+                    precio = float(val_precio) if val_precio and not pd.isna(val_precio) else 0.0
+                except:
+                    precio = 0.0
 
                 # Cabecera de Producto
-                html_prod = f"""
+                st.markdown(f"""
                 <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif;">
                     <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
                     <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
                     <div style="margin-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
                     <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
                     <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
-                </div>"""
-                st.markdown(html_prod, unsafe_allow_html=True)
+                </div>""", unsafe_allow_html=True)
 
                 # Bloque de Existencias
                 dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                 
                 for _, fila in grupo.iterrows():
-                    # CORRECCIÓN: Definimos tienda_limpia y la usamos en todo el bloque
-                    tienda_raw = fila['name_tienda']
-                    tienda_limpia = str(tienda_raw).strip()     
-                    
+                    tienda_limpia = str(fila['name_tienda']).strip()
                     cant = int(fila['n_cantidad'])
                     codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
                     
-                    # Buscamos la sincronización usando el nombre limpio
                     f_valida_raw = dict_sinc.get(tienda_limpia)
                     sinc_txt = "---"
+                    dato_fresco = False
                     
                     if f_valida_raw:
                         try:
+                            # Convertimos la fecha de sincronización
                             f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
+                            ahora = datetime.now()
+                            
+                            # REGLA DE 3 HORAS: Si el reporte es más viejo que esto, se oculta
+                            # Esto soluciona el problema de que el "0" no se reporte
+                            if (ahora - f_dt).total_seconds() < 10800: 
+                                dato_fresco = True
+                            
                             sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
                         except:
                             sinc_txt = f_valida_raw
 
-                    if cant > 0:
+                    # MOSTRAR SOLO SI TIENE STOCK Y ES RECIENTE (Solución definitiva)
+                    if cant > 0 and dato_fresco:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
-                        # CORRECCIÓN: Se usa tienda_limpia dentro del f-string
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
@@ -112,6 +123,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
