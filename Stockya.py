@@ -87,12 +87,12 @@ if cod:
 
                     # Cabecera de Producto
                     st.markdown(f"""
-                    <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif;">
+                    <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif; color: #333 !important;">
                         <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
-                        <div style="margin-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
-                        <div style="margin-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
-                        <div style="margin-bottom: 4px;"><b>Marca:</b> {marca}</div>
-                        <div style="font-size: 1.2em; color: #000; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
+                        <div style="margin-bottom: 4px;color: #333 !important;"><b>Referencia:</b> {referencia}</div>
+                        <div style="margin-bottom: 4px;color: #333 !important;"><b>Descripción:</b> {descripcion}</div>
+                        <div style="margin-bottom: 4px;color: #333 !important;"><b>Marca:</b> {marca}</div>
+                        <div style="font-size: 1.2em; color: #000; !important;font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
                     </div>""", unsafe_allow_html=True)
 
                     dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
@@ -117,8 +117,12 @@ if cod:
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif;">
                             <div style="font-weight: bold; color: #666; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
-                            <div style="margin-bottom: 6px;"><b>Código:</b> {codigo_barras}</div>
-                            <div style="margin-bottom: 6px;"><b>Tienda:</b> <span style="color: #007bff; font-weight: bold; font-size: 1.1em;">{tienda_limpia}</span></div>
+                            <div style="margin-bottom: 6px;color: #333 !important;">
+                                <b>Código:</b> <span style="color: #333 !important;">{codigo_barras}</span>
+                            </div>
+                            <div style="margin-bottom: 6px;color: #333 !important;">
+                                <b>Tienda:</b> <span style="color: #007bff; font-weight: bold; font-size: 1.1em;">{tienda_limpia}</span>
+                            </div>
                             <div style="margin-bottom: 6px; font-weight: bold; color: #333;">Stock: {emoji_stock} {cant}</div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888; border-top: 1px dashed #eee; padding-top: 5px;">
                                 <b>Actualización:</b> {sinc_txt}
@@ -133,6 +137,7 @@ if cod:
             
     except Exception as e:
         st.error(f"Error: {e}")
+
 
 
 
