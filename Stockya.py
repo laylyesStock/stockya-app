@@ -57,21 +57,17 @@ if cod:
             df_raw = pd.DataFrame(res_stock.data)
 
             # --- PARCHE DE LIMPIEZA DE FANTASMAS ---
-            # Solo permitimos filas que coincidan con la última sesión de su tienda
             def es_dato_nuevo(fila):
                 t = str(fila['name_tienda']).strip()
                 s_id = int(fila.get('sesion_id', 0))
-                # Si es la última sesión conocida de esa tienda, es válido
                 return s_id >= dict_max_sesion.get(t, 0)
 
             df_filtrado = df_raw[df_raw.apply(es_dato_nuevo, axis=1)]
-            # Además, solo mostramos si la cantidad es mayor a 0
             df_final = df_filtrado[df_filtrado['n_cantidad'] > 0]
 
             if df_final.empty:
                 st.warning("📍 Producto sin existencia.")
             else:
-                # Agrupamos por código para mostrar la cabecera del producto
                 for cod_art, grupo in df_final.groupby('c_codarticulo'):
                     primero = grupo.iloc[0]
                     
@@ -85,7 +81,7 @@ if cod:
                     except:
                         precio = 0.0
 
-                    # Cabecera de Producto
+                    # Cabecera de Producto (CORREGIDA)
                     st.markdown(f"""
                     <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif; color: #333 !important;">
                         <div style="font-weight: bold; color: #666 !important; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
@@ -97,7 +93,6 @@ if cod:
 
                     dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                     
-                    # Bloque de Existencias (Solo las válidas)
                     for _, fila in grupo.iterrows():
                         tienda_limpia = str(fila['name_tienda']).strip()
                         cant = int(fila['n_cantidad'])
@@ -114,24 +109,22 @@ if cod:
                                 sinc_txt = f_valida_raw
 
                         emoji_stock = "✅" if cant > 3 else "⚠️"
+                        
+                        # Bloque de Existencia (CORREGIDO)
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif; color: #333 !important;">
                             <div style="font-weight: bold; color: #666 !important; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
-    
                             <div style="margin-bottom: 6px; color: #333 !important;">
                                 <b>Código:</b> <span style="color: #333 !important;">{codigo_barras}</span>
                             </div>
-        
                             <div style="margin-bottom: 6px; color: #333 !important;">
                                 <b>Tienda:</b> <span style="color: #007bff !important; font-weight: bold; font-size: 1.1em;">{tienda_limpia}</span>
                             </div>
-        
                             <div style="margin-bottom: 6px; font-weight: bold; color: #333 !important;">
                                 Stock: {emoji_stock} {cant}
                             </div>
-        
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888 !important; border-top: 1px dashed #eee; padding-top: 5px;">
-                                <b>Actualización:</b> {sinc_txt}
+                                <b style="color: #888 !important;">Actualización:</b> <span style="color: #888 !important;">{sinc_txt}</span>
                             </div>
                         </div>"""
                         st.markdown(html_exis, unsafe_allow_html=True)
