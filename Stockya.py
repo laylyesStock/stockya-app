@@ -50,8 +50,10 @@ if cod:
         else:
             dict_max_sesion = {}
 
-        # C. Buscamos el producto
-        res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
+        # res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
+
+        # C. Buscamos el producto (CORREGIDA para búsqueda exacta)
+        res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.eq.{cod},c_Modelo.eq.{cod}").execute()
         
         if res_stock.data:
             df_raw = pd.DataFrame(res_stock.data)
