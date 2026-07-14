@@ -40,29 +40,38 @@ if cod:
     try:
         # A. Bitácora de sincronización
         res_ctrl = supabase.table("tblcontrolexistencias").select("tienda, ultimaactualizacion").execute()
-        dict_sinc = {str(t['tienda']).strip(): t['ultimaactualizacion'] for t in res_ctrl.data}
+        dict_sinc = {}
+        if res_ctrl.data:
+            dict_sinc = {str(t['tienda']).strip(): t['ultimaactualizacion'] for t in res_ctrl.data}
 
-        # B. Obtener IDs de sesión más recientes por tienda
+        # B. Obtener IDs de sesión más recientes por tienda de forma segura
         res_sesiones = supabase.table("tblExistencias").select("name_tienda, sesion_id").execute()
+        dict_max_sesion = {}
         if res_sesiones.data:
             df_sesiones = pd.DataFrame(res_sesiones.data)
-            dict_max_sesion = df_sesiones.groupby('name_tienda')['sesion_id'].max().to_dict()
+            if not df_sesiones.empty and 'sesion_id' in df_sesiones.columns:
+                df_sesiones['sesion_id'] = pd.to_numeric(df_sesiones['sesion_id'], errors='coerce').fillna(0).astype(int)
+                dict_max_sesion = df_sesiones.groupby('name_tienda')['sesion_id'].max().to_dict()
+
+        # C. Buscamos el producto con lógica inteligente para evitar cruces
+        if cod.isdigit():
+            # Si introducen números limpios (Código de barra), coincidencia exacta estricta
+            res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.eq.{cod},c_Modelo.eq.{cod}").execute()
         else:
-            dict_max_sesion = {}
-
-        # res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.ilike.%{cod}%,c_Modelo.ilike.%{cod}%").execute()
-
-        # C. Buscamos el producto (CORREGIDA para búsqueda exacta)
-        res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.eq.{cod},c_Modelo.eq.{cod}").execute()
+            # Si incluye letras, es referencia/modelo, usamos coincidencia parcial flexible
+            res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.eq.{cod},c_Modelo.ilike.%{cod}%").execute()
         
         if res_stock.data:
             df_raw = pd.DataFrame(res_stock.data)
 
-            # --- PARCHE DE LIMPIEZA DE FANTASMAS ---
+            # --- PARCHE DE LIMPIEZA DE FANTASMAS PROTEGIDO ---
             def es_dato_nuevo(fila):
-                t = str(fila['name_tienda']).strip()
-                s_id = int(fila.get('sesion_id', 0))
-                return s_id >= dict_max_sesion.get(t, 0)
+                try:
+                    t = str(fila['name_tienda']).strip()
+                    s_id = int(fila.get('sesion_id', 0)) if pd.notna(fila.get('sesion_id')) else 0
+                    return s_id >= dict_max_sesion.get(t, 0)
+                except:
+                    return True  # En caso de duda dejamos pasar el registro para no congelar la app
 
             df_filtrado = df_raw[df_raw.apply(es_dato_nuevo, axis=1)]
             df_final = df_filtrado[df_filtrado['n_cantidad'] > 0]
@@ -83,7 +92,7 @@ if cod:
                     except:
                         precio = 0.0
 
-                    # Cabecera de Producto (CORREGIDA)
+                    # Cabecera de Producto
                     st.markdown(f"""
                     <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif; color: #333 !important;">
                         <div style="font-weight: bold; color: #666 !important; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
@@ -112,17 +121,17 @@ if cod:
 
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         
-                        # Bloque de Existencia (CORREGIDO)
+                        # Bloque de Existencia
                         html_exis = f"""
                         <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif; color: #333 !important;">
                             <div style="font-weight: bold; color: #666 !important; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
-                            <div style="margin-bottom: 6px; color: #333 !important;">
+                            <div style="padding-bottom: 6px; color: #333 !important;">
                                 <b>Código:</b> <span style="color: #333 !important;">{codigo_barras}</span>
                             </div>
-                            <div style="margin-bottom: 6px; color: #333 !important;">
+                            <div style="padding-bottom: 6px; color: #333 !important;">
                                 <b>Tienda:</b> <span style="color: #007bff !important; font-weight: bold; font-size: 1.1em;">{tienda_limpia}</span>
                             </div>
-                            <div style="margin-bottom: 6px; font-weight: bold; color: #333 !important;">
+                            <div style="padding-bottom: 6px; font-weight: bold; color: #333 !important;">
                                 Stock: {emoji_stock} {cant}
                             </div>
                             <div style="margin-top: 10px; font-size: 0.85em; color: #888 !important; border-top: 1px dashed #eee; padding-top: 5px;">
@@ -137,9 +146,7 @@ if cod:
             if buscar: st.error("📍 Producto no encontrado.")
             
     except Exception as e:
-        st.error(f"Error: {e}")
-
-
+        st.error(f"⚠️ Sincronizando datos con los servidores locales... Por favor, intente la búsqueda de nuevo en unos instantes.")
 
 
 
