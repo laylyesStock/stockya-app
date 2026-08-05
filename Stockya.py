@@ -6,13 +6,51 @@ import os
 # 1. Configuración de página
 st.set_page_config(page_title="StockYa", page_icon="PiraB.PNG", layout="centered")
 
-# 2. LIMPIEZA TOTAL DE INTERFAZ (CSS)
+# 2. LIMPIEZA TOTAL DE INTERFAZ Y ADAPTACIÓN A MODO OSCURO / CLARO
 st.markdown("""
     <style>
     .stDeployButton, #stDecoration { display: none !important; }
     div[data-testid="stToolbar"] { display: none !important; }
-    header { background-color: rgba(0,0,0,0) !important; height: 1rem !important; }
+    header { background-color: transparent !important; height: 1rem !important; }
     .block-container { padding-top: 1rem !important; }
+
+    /* Tarjetas adaptables automáticamente según el tema del teléfono */
+    .card-producto {
+        background-color: var(--secondary-background-color);
+        color: var(--text-color);
+        padding: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px 10px 0 0;
+        margin-top: 20px;
+        font-family: sans-serif;
+    }
+    .card-existencia {
+        background-color: var(--secondary-background-color);
+        color: var(--text-color);
+        padding: 15px;
+        border: 1px solid var(--border-color);
+        border-top: none;
+        margin-bottom: 2px;
+        font-family: sans-serif;
+    }
+    .subtexto {
+        font-weight: bold;
+        opacity: 0.7;
+        font-size: 0.85em;
+        margin-bottom: 8px;
+    }
+    .tienda-highlight {
+        color: #1E88E5 !important;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    .footer-sinc {
+        margin-top: 10px;
+        font-size: 0.85em;
+        opacity: 0.6;
+        border-top: 1px dashed var(--border-color);
+        padding-top: 5px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -94,12 +132,12 @@ if cod:
 
                     # Cabecera de Producto
                     st.markdown(f"""
-                    <div style="background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 10px 10px 0 0; margin-top: 20px; font-family: sans-serif; color: #333 !important;">
-                        <div style="font-weight: bold; color: #666 !important; font-size: 0.85em; margin-bottom: 8px;">📦 PRODUCTO</div>
-                        <div style="margin-bottom: 4px; color: #333 !important;"><b>Referencia:</b> {referencia}</div>
-                        <div style="margin-bottom: 4px; color: #333 !important;"><b>Descripción:</b> {descripcion}</div>
-                        <div style="margin-bottom: 4px; color: #333 !important;"><b>Marca:</b> {marca}</div>
-                        <div style="font-size: 1.2em; color: #000 !important; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
+                    <div class="card-producto">
+                        <div class="subtexto">📦 PRODUCTO</div>
+                        <div style="padding-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
+                        <div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
+                        <div style="padding-bottom: 4px;"><b>Marca:</b> {marca}</div>
+                        <div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
                     </div>""", unsafe_allow_html=True)
 
                     dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
@@ -123,19 +161,19 @@ if cod:
                         
                         # Bloque de Existencia
                         html_exis = f"""
-                        <div style="background-color: #ffffff; padding: 15px; border: 1px solid #ddd; border-top: none; margin-bottom: 2px; font-family: sans-serif; color: #333 !important;">
-                            <div style="font-weight: bold; color: #666 !important; font-size: 0.85em; margin-bottom: 8px;">🏭 EXISTENCIA</div>
-                            <div style="padding-bottom: 6px; color: #333 !important;">
-                                <b>Código:</b> <span style="color: #333 !important;">{codigo_barras}</span>
+                        <div class="card-existencia">
+                            <div class="subtexto">🏭 EXISTENCIA</div>
+                            <div style="padding-bottom: 6px;">
+                                <b>Código:</b> <span>{codigo_barras}</span>
                             </div>
-                            <div style="padding-bottom: 6px; color: #333 !important;">
-                                <b>Tienda:</b> <span style="color: #007bff !important; font-weight: bold; font-size: 1.1em;">{tienda_limpia}</span>
+                            <div style="padding-bottom: 6px;">
+                                <b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span>
                             </div>
-                            <div style="padding-bottom: 6px; font-weight: bold; color: #333 !important;">
+                            <div style="padding-bottom: 6px; font-weight: bold;">
                                 Stock: {emoji_stock} {cant}
                             </div>
-                            <div style="margin-top: 10px; font-size: 0.85em; color: #888 !important; border-top: 1px dashed #eee; padding-top: 5px;">
-                                <b style="color: #888 !important;">Actualización:</b> <span style="color: #888 !important;">{sinc_txt}</span>
+                            <div class="footer-sinc">
+                                <b>Actualización:</b> <span>{sinc_txt}</span>
                             </div>
                         </div>"""
                         st.markdown(html_exis, unsafe_allow_html=True)
