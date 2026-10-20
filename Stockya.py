@@ -70,7 +70,12 @@ st.markdown("---")
 
 col1, col2 = st.columns([4, 1])
 with col1:
-    cod = st.text_input("Buscar...", label_visibility="collapsed", placeholder="Código o Referencia").strip().upper()
+    cod = st.text_input(
+        "Buscar...", 
+        label_visibility="collapsed", 
+        placeholder="Código o Referencia",
+        help="ℹ️ Solo se muestra mercancía con existencia física activa (> 0). Si un modelo no aparece, está agotado."
+    ).strip().upper()
 with col2:
     buscar = st.button("🔍")
 
@@ -130,6 +135,11 @@ if cod:
                     except:
                         precio = 0.0
 
+                    # --- ADVERTENCIA DE COINCIDENCIA PARCIAL ---
+                    ref_limpia = referencia.upper()
+                    if not cod.isdigit() and cod != ref_limpia:
+                        st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
+
                     # Cabecera de Producto
                     st.markdown(f"""
                     <div class="card-producto">
@@ -185,7 +195,6 @@ if cod:
             
     except Exception as e:
         st.error(f"⚠️ Sincronizando datos con los servidores locales... Por favor, intente la búsqueda de nuevo en unos instantes.")
-
 
 
 
