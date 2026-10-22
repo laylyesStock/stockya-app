@@ -172,8 +172,8 @@ if cod:
                                     dict_ventas_tienda[t_nom] = c_v
                                     total_cadena += c_v
                                 
-                                ritmo_cadena = round(total_cadena / 30.0, 1)
-                                html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (30d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
+                                ritmo_cadena = round(total_cadena / 15.0, 1)
+                                html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (15d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
                         except Exception:
                             pass
 
@@ -214,11 +214,11 @@ if cod:
                         html_rotacion_tienda = ""
                         if es_exacto and "DISTRIBUIDORA" not in tienda_limpia.upper():
                             v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
-                            ritmo_t = round(v_tienda / 30.0, 1)
+                            ritmo_t = round(v_tienda / 15.0, 1)
 
                             # Cálculo de cobertura sin etiquetas de velocidad
                             if v_tienda > 0:
-                                dias_cob = int(cant / (v_tienda / 30.0))
+                                dias_cob = int(cant / (v_tienda / 15.0))
                                 txt_cobertura = f"⏱️ Cobertura: <b>~{dias_cob} días</b>"
                             else:
                                 txt_cobertura = "⏱️ Cobertura: <b>Estancado</b>"
