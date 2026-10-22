@@ -51,6 +51,16 @@ st.markdown("""
         border-top: 1px dashed var(--border-color);
         padding-top: 5px;
     }
+    .badge-rotacion {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.88em;
+        font-weight: bold;
+        margin-top: 8px;
+        background-color: rgba(30, 136, 229, 0.15);
+        border: 1px solid rgba(30, 136, 229, 0.35);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -137,8 +147,30 @@ if cod:
 
                     # --- ADVERTENCIA DE COINCIDENCIA PARCIAL ---
                     ref_limpia = referencia.upper()
-                    if not cod.isdigit() and cod != ref_limpia:
+                    es_exacto = cod.isdigit() or (cod == ref_limpia)
+
+                    if not es_exacto:
                         st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
+
+                    # --- CONSULTA DE ROTACIÓN: SOLO SI LA BÚSQUEDA ES EXACTA ---
+                    dict_ventas_tienda = {}
+                    html_rotacion_global = ""
+
+                    if es_exacto:
+                        try:
+                            res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_30d").eq("c_codarticulo", str(cod_art).strip()).execute()
+                            if res_ventas.data:
+                                total_cadena = 0
+                                for v in res_ventas.data:
+                                    t_nom = str(v.get('name_tienda', '')).strip()
+                                    c_v = int(v.get('cant_vendida_30d', 0))
+                                    dict_ventas_tienda[t_nom] = c_v
+                                    total_cadena += c_v
+                                
+                                ritmo_cadena = round(total_cadena / 30.0, 1)
+                                html_rotacion_global = f"""<div class="badge-rotacion">📊 Ventas cadena (30d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>"""
+                        except Exception:
+                            pass
 
                     # Cabecera de Producto
                     st.markdown(f"""
@@ -148,6 +180,7 @@ if cod:
                         <div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
                         <div style="padding-bottom: 4px;"><b>Marca:</b> {marca}</div>
                         <div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
+                        {html_rotacion_global}
                     </div>""", unsafe_allow_html=True)
 
                     dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
@@ -169,6 +202,23 @@ if cod:
 
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         
+                        # Bloque de rotación por tienda (solo si fue exacto)
+                        html_rotacion_tienda = ""
+                        if es_exacto:
+                            v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
+                            ritmo_t = round(v_tienda / 30.0, 1)
+                            if v_tienda >= 10:
+                                tag_rot = "🔥 Rápida"
+                            elif v_tienda > 0:
+                                tag_rot = "⚡ Moderada"
+                            else:
+                                tag_rot = "🧊 Sin ventas"
+
+                            html_rotacion_tienda = f"""
+                            <div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">
+                                📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • <i>{tag_rot}</i>
+                            </div>"""
+
                         # Bloque de Existencia
                         html_exis = f"""
                         <div class="card-existencia">
@@ -182,6 +232,7 @@ if cod:
                             <div style="padding-bottom: 6px; font-weight: bold;">
                                 Stock: {emoji_stock} {cant}
                             </div>
+                            {html_rotacion_tienda}
                             <div class="footer-sinc">
                                 <b>Actualización:</b> <span>{sinc_txt}</span>
                             </div>
