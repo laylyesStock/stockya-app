@@ -163,25 +163,32 @@ if cod:
                                 total_cadena = 0
                                 for v in res_ventas.data:
                                     t_nom = str(v.get('name_tienda', '')).strip()
+                                    
+                                    # Exclusión de Distribuidora (solo tiendas minoristas)
+                                    if "DISTRIBUIDORA" in t_nom.upper():
+                                        continue
+
                                     c_v = int(v.get('cant_vendida_30d', 0))
                                     dict_ventas_tienda[t_nom] = c_v
                                     total_cadena += c_v
                                 
                                 ritmo_cadena = round(total_cadena / 30.0, 1)
-                                html_rotacion_global = f"""<div class="badge-rotacion">📊 Ventas cadena (30d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>"""
+                                html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (30d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
                         except Exception:
                             pass
 
                     # Cabecera de Producto
-                    st.markdown(f"""
-                    <div class="card-producto">
-                        <div class="subtexto">📦 PRODUCTO</div>
-                        <div style="padding-bottom: 4px;"><b>Referencia:</b> {referencia}</div>
-                        <div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>
-                        <div style="padding-bottom: 4px;"><b>Marca:</b> {marca}</div>
-                        <div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>
-                        {html_rotacion_global}
-                    </div>""", unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="card-producto">'
+                        f'<div class="subtexto">📦 PRODUCTO</div>'
+                        f'<div style="padding-bottom: 4px;"><b>Referencia:</b> {referencia}</div>'
+                        f'<div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>'
+                        f'<div style="padding-bottom: 4px;"><b>Marca:</b> {marca}</div>'
+                        f'<div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>'
+                        f'{html_rotacion_global}'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
                     
@@ -202,9 +209,9 @@ if cod:
 
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         
-                        # Bloque de rotación por tienda (solo si fue exacto)
+                        # Bloque de rotación por tienda (solo si fue exacto y no es Distribuidora)
                         html_rotacion_tienda = ""
-                        if es_exacto:
+                        if es_exacto and "DISTRIBUIDORA" not in tienda_limpia.upper():
                             v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
                             ritmo_t = round(v_tienda / 30.0, 1)
                             if v_tienda >= 10:
@@ -216,24 +223,26 @@ if cod:
 
                             html_rotacion_tienda = f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • <i>{tag_rot}</i></div>'
 
-                        # Bloque de Existencia
-                        html_exis = f"""<div class="card-existencia">
-<div class="subtexto">🏭 EXISTENCIA</div>
-<div style="padding-bottom: 6px;"><b>Código:</b> <span>{codigo_barras}</span></div>
-<div style="padding-bottom: 6px;"><b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span></div>
-<div style="padding-bottom: 6px; font-weight: bold;">Stock: {emoji_stock} {cant}</div>
-{html_rotacion_tienda}
-<div class="footer-sinc"><b>Actualización:</b> <span>{sinc_txt}</span></div>
-</div>"""
-                        st.markdown(html_exis, unsafe_allow_html=True) 
+                        # Bloque de Existencia continuo (sin sangría que active bloques de código preformateado)
+                        html_exis = (
+                            f'<div class="card-existencia">'
+                            f'<div class="subtexto">🏭 EXISTENCIA</div>'
+                            f'<div style="padding-bottom: 6px;"><b>Código:</b> <span>{codigo_barras}</span></div>'
+                            f'<div style="padding-bottom: 6px;"><b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span></div>'
+                            f'<div style="padding-bottom: 6px; font-weight: bold;">Stock: {emoji_stock} {cant}</div>'
+                            f'{html_rotacion_tienda}'
+                            f'<div class="footer-sinc"><b>Actualización:</b> <span>{sinc_txt}</span></div>'
+                            f'</div>'
+                        )
+                        st.markdown(html_exis, unsafe_allow_html=True)
+
+                    st.write("") 
 
         else:
             if buscar: st.error("📍 Producto no encontrado.")
             
     except Exception as e:
         st.error(f"⚠️ Sincronizando datos con los servidores locales... Por favor, intente la búsqueda de nuevo en unos instantes.")
-
-
 
 
 
