@@ -214,32 +214,18 @@ if cod:
                             else:
                                 tag_rot = "🧊 Sin ventas"
 
-                            html_rotacion_tienda = f"""
-                            <div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">
-                                📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • <i>{tag_rot}</i>
-                            </div>"""
+                            html_rotacion_tienda = f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • <i>{tag_rot}</i></div>'
 
                         # Bloque de Existencia
-                        html_exis = f"""
-                        <div class="card-existencia">
-                            <div class="subtexto">🏭 EXISTENCIA</div>
-                            <div style="padding-bottom: 6px;">
-                                <b>Código:</b> <span>{codigo_barras}</span>
-                            </div>
-                            <div style="padding-bottom: 6px;">
-                                <b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span>
-                            </div>
-                            <div style="padding-bottom: 6px; font-weight: bold;">
-                                Stock: {emoji_stock} {cant}
-                            </div>
-                            {html_rotacion_tienda}
-                            <div class="footer-sinc">
-                                <b>Actualización:</b> <span>{sinc_txt}</span>
-                            </div>
-                        </div>"""
-                        st.markdown(html_exis, unsafe_allow_html=True)
-                    
-                    st.write("") 
+                        html_exis = f"""<div class="card-existencia">
+<div class="subtexto">🏭 EXISTENCIA</div>
+<div style="padding-bottom: 6px;"><b>Código:</b> <span>{codigo_barras}</span></div>
+<div style="padding-bottom: 6px;"><b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span></div>
+<div style="padding-bottom: 6px; font-weight: bold;">Stock: {emoji_stock} {cant}</div>
+{html_rotacion_tienda}
+<div class="footer-sinc"><b>Actualización:</b> <span>{sinc_txt}</span></div>
+</div>"""
+                        st.markdown(html_exis, unsafe_allow_html=True) 
 
         else:
             if buscar: st.error("📍 Producto no encontrado.")
