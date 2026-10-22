@@ -214,6 +214,14 @@ if cod:
                         if es_exacto and "DISTRIBUIDORA" not in tienda_limpia.upper():
                             v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
                             ritmo_t = round(v_tienda / 30.0, 1)
+                            
+                            # Cálculo de días de cobertura
+                            if v_tienda > 0:
+                                dias_cob = int(cant / (v_tienda / 30.0))
+                                txt_cobertura = f"⏱️ Cobertura: <b>~{dias_cob} días</b>"
+                            else:
+                                txt_cobertura = "⏱️ Cobertura: <b>Estancado</b>"
+
                             if v_tienda >= 10:
                                 tag_rot = "🔥 Rápida"
                             elif v_tienda > 0:
@@ -221,7 +229,7 @@ if cod:
                             else:
                                 tag_rot = "🧊 Sin ventas"
 
-                            html_rotacion_tienda = f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • <i>{tag_rot}</i></div>'
+                            html_rotacion_tienda = f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • {txt_cobertura} • <i>{tag_rot}</i></div>'
 
                         # Bloque de Existencia continuo (sin sangría que active bloques de código preformateado)
                         html_exis = (
