@@ -210,27 +210,27 @@ if cod:
                         emoji_stock = "✅" if cant > 3 else "⚠️"
                         
                         # Bloque de rotación por tienda (solo si fue exacto y no es Distribuidora)
+                        # Bloque de rotación por tienda (solo si fue exacto y no es Distribuidora)
                         html_rotacion_tienda = ""
                         if es_exacto and "DISTRIBUIDORA" not in tienda_limpia.upper():
                             v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
                             ritmo_t = round(v_tienda / 30.0, 1)
-                            
-                            # Cálculo de días de cobertura
+
+                            # Cálculo de cobertura sin etiquetas de velocidad
                             if v_tienda > 0:
                                 dias_cob = int(cant / (v_tienda / 30.0))
                                 txt_cobertura = f"⏱️ Cobertura: <b>~{dias_cob} días</b>"
                             else:
                                 txt_cobertura = "⏱️ Cobertura: <b>Estancado</b>"
 
-                            if v_tienda >= 10:
-                                tag_rot = "🔥 Rápida"
-                            elif v_tienda > 0:
-                                tag_rot = "⚡ Moderada"
-                            else:
-                                tag_rot = "🧊 Sin ventas"
-
-                            html_rotacion_tienda = f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día) • {txt_cobertura} • <i>{tag_rot}</i></div>'
-
+                            html_rotacion_tienda = (
+                                f'<div style="padding-bottom: 2px; font-size: 0.9em; opacity: 0.9;">'
+                                f'📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día)'
+                                f'</div>'
+                                f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">'
+                                f'{txt_cobertura}'
+                                f'</div>'
+                            )
                         # Bloque de Existencia continuo (sin sangría que active bloques de código preformateado)
                         html_exis = (
                             f'<div class="card-existencia">'
