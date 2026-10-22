@@ -168,7 +168,7 @@ if cod:
                                     if "DISTRIBUIDORA" in t_nom.upper():
                                         continue
 
-                                    c_v = int(v.get('cant_vendida_30d', 0))
+                                    c_v = int(v.get('cant_vendida_15d', 0))
                                     dict_ventas_tienda[t_nom] = c_v
                                     total_cadena += c_v
                                 
@@ -225,7 +225,7 @@ if cod:
 
                             html_rotacion_tienda = (
                                 f'<div style="padding-bottom: 2px; font-size: 0.9em; opacity: 0.9;">'
-                                f'📈 <b>Ventas 30d:</b> {v_tienda} und ({ritmo_t}/día)'
+                                f'📈 <b>Ventas 15d:</b> {v_tienda} und ({ritmo_t}/día)'
                                 f'</div>'
                                 f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">'
                                 f'{txt_cobertura}'
