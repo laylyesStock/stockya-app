@@ -153,6 +153,7 @@ if cod:
                         st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
 
                     # --- CONSULTA DE ROTACIÓN: SOLO SI LA BÚSQUEDA ES EXACTA ---
+                    # --- CONSULTA DE ROTACIÓN: SOLO SI LA BÚSQUEDA ES EXACTA ---
                     dict_ventas_tienda = {}
                     html_rotacion_global = ""
 
