@@ -147,7 +147,7 @@ if cod:
 
                     # --- ADVERTENCIA DE COINCIDENCIA PARCIAL ---
                     ref_limpia = referencia.upper()
-                    es_exacto = cod.isdigit() or (cod == ref_limpia)
+                    es_exacto = cod.isdigit() or (cod.strip() == ref_limpia.strip())
 
                     if not es_exacto:
                         st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
