@@ -12,8 +12,17 @@ ORDEN_TALLAS_LETRAS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"]
 
 # --- CARGA DEL CATÁLOGO DE COLORES EN MEMORIA (UNA SOLA VEZ) ---
 @st.cache_data
-def cargar_catalogo_colores(ruta_txt="colores.txt"):
+def cargar_catalogo_colores(nombre_archivo="colores.txt"):
     diccionario_colores = {}
+    
+    # 1. Asegurar la ruta absoluta exacta donde vive este script
+    directorio_actual = os.path.dirname(os.path.abspath(__file__))
+    ruta_txt = os.path.join(directorio_actual, nombre_archivo)
+    
+    # Si por alguna razón no lo encuentra allí, prueba en la ruta directa
+    if not os.path.exists(ruta_txt):
+        ruta_txt = nombre_archivo
+
     if not os.path.exists(ruta_txt):
         return {}, []
 
