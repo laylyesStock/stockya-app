@@ -153,19 +153,23 @@ if cod:
                         st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
 
                     # --- CONSULTA DE ROTACIÓN: SOLO SI LA BÚSQUEDA ES EXACTA ---
+                   
                     # --- CONSULTA DE ROTACIÓN: SOLO SI LA BÚSQUEDA ES EXACTA ---
                     dict_ventas_tienda = {}
+                    total_cadena = 0
+                    ritmo_cadena = 0.0
                     html_rotacion_global = ""
 
                     if es_exacto:
                         try:
-                            res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_30d").eq("c_codarticulo", str(cod_art).strip()).execute()
+                            # 1. Asegurar que seleccionamos cant_vendida_15d
+                            res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_15d").eq("c_codarticulo", str(cod_art).strip()).execute()
+                            
                             if res_ventas.data:
-                                total_cadena = 0
                                 for v in res_ventas.data:
                                     t_nom = str(v.get('name_tienda', '')).strip()
                                     
-                                    # Exclusión de Distribuidora (solo tiendas minoristas)
+                                    # Exclusión de Distribuidora
                                     if "DISTRIBUIDORA" in t_nom.upper():
                                         continue
 
@@ -174,7 +178,11 @@ if cod:
                                     total_cadena += c_v
                                 
                                 ritmo_cadena = round(total_cadena / 15.0, 1)
-                                html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (15d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
+                        except Exception:
+                            pass
+
+                        # 2. Se genera SIEMPRE que la búsqueda sea exacta, fuera del try/except
+                        html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (15d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
                         except Exception:
                             pass
 
