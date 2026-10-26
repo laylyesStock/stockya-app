@@ -280,7 +280,7 @@ if cod:
 
                     if es_exacto:
                         try:
-                            res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_15d").eq("c_codarticulo", str(cod_art).strip()).execute()
+                            res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_30d").eq("c_codarticulo", str(cod_art).strip()).execute()
                             if res_ventas.data:
                                 for v in res_ventas.data:
                                     t_nom = str(v.get('name_tienda', '')).strip()
@@ -288,7 +288,7 @@ if cod:
                                     if "DISTRIBUIDORA" in t_nom.upper():
                                         continue
 
-                                    c_v = int(v.get('cant_vendida_15d', 0))
+                                    c_v = int(v.get('cant_vendida_30d', 0))
                                     dict_ventas_tienda[t_nom] = c_v
                                     total_cadena += c_v
 
