@@ -303,8 +303,7 @@ if cod:
                     txt_color_header = ""
 
                     raiz_mod, cod_color, talla_actual = descomponer_modelo(referencia, LISTA_COLORES_ORDENADOS)
-                    st.info(f"🔍 DEBUG: Ref='{referencia}' | Raiz='{raiz_mod}' | Color='{cod_color}' | Talla='{talla_actual}' | Colores cargados={len(LISTA_COLORES_ORDENADOS)}")
-
+                    
                     if raiz_mod and cod_color and es_exacto:
                         nombre_color_desc = DICT_COLORES.get(cod_color, cod_color)
                         txt_color_header = f' | <b>Color:</b> {nombre_color_desc} ({cod_color})'
