@@ -208,7 +208,7 @@ with col1:
         "Buscar...",
         label_visibility="collapsed",
         placeholder="Código o Referencia",
-        help="ℹ️ Solo se muestra mercancía con existencia física activa (> 0). Si un modelo no aparece, está agotado."
+        help="ℹ️ Solo se muestra mercancía con existencia física activa (> 0) o ventas recientes."
     ).strip().upper()
 with col2:
     buscar = st.button("🔍")
@@ -221,7 +221,7 @@ if cod:
         if res_ctrl.data:
             dict_sinc = {str(t['tienda']).strip(): t['ultimaactualizacion'] for t in res_ctrl.data}
 
-        # B. Obtener IDs de sesión más recientes por tienda de forma segura
+        # B. Obtener IDs de sesión más recientes
         res_sesiones = supabase.table("tblExistencias").select("name_tienda, sesion_id").execute()
         dict_max_sesion = {}
         if res_sesiones.data:
@@ -230,7 +230,7 @@ if cod:
                 df_sesiones['sesion_id'] = pd.to_numeric(df_sesiones['sesion_id'], errors='coerce').fillna(0).astype(int)
                 dict_max_sesion = df_sesiones.groupby('name_tienda')['sesion_id'].max().to_dict()
 
-        # C. Buscamos el producto con lógica inteligente para evitar cruces
+        # C. Buscamos el producto
         if cod.isdigit():
             res_stock = supabase.table("tblExistencias").select("*").or_(f"c_codarticulo.eq.{cod},c_Modelo.eq.{cod}").execute()
         else:
@@ -248,181 +248,208 @@ if cod:
                     return True
 
             df_filtrado = df_raw[df_raw.apply(es_dato_nuevo, axis=1)]
-            df_final = df_filtrado[df_filtrado['n_cantidad'] > 0]
+            df_final = df_filtrado 
 
-            if df_final.empty:
-                st.warning("📍 Producto sin existencia.")
-            else:
-                for cod_art, grupo in df_final.groupby('c_codarticulo'):
-                    primero = grupo.iloc[0]
+            productos_mostrados = 0
 
-                    referencia = str(primero.get('c_Modelo', 'N/A')).strip()
-                    descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
-                    marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
+            for cod_art, grupo in df_final.groupby('c_codarticulo'):
+                primero = grupo.iloc[0]
+
+                referencia = str(primero.get('c_Modelo', 'N/A')).strip()
+                descripcion = str(primero.get('c_descripcion', 'N/A')).strip()
+                marca = str(primero.get('c_Marca', 'N/A')).strip().upper()
+
+                try:
+                    val_precio = primero.get('n_Precio1')
+                    precio = float(val_precio) if val_precio and not pd.isna(val_precio) else 0.0
+                except:
+                    precio = 0.0
+
+                ref_limpia = referencia.upper()
+                es_exacto = cod.isdigit() or (cod.strip() == ref_limpia.strip())
+
+                # --- ROTACIÓN ---
+                dict_ventas_tienda = {}
+                total_cadena = 0
+                ritmo_cadena = 0.0
+                html_rotacion_global = ""
+
+                if es_exacto:
+                    try:
+                        res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_30d").eq("c_codarticulo", str(cod_art).strip()).execute()
+                        if res_ventas.data:
+                            for v in res_ventas.data:
+                                t_nom = str(v.get('name_tienda', '')).strip()
+                                if "DISTRIBUIDORA" in t_nom.upper():
+                                    continue
+                                c_v = int(v.get('cant_vendida_30d', 0))
+                                dict_ventas_tienda[t_nom] = c_v
+                                total_cadena += c_v
+                            ritmo_cadena = round(total_cadena / 15.0, 1)
+                    except Exception:
+                        pass
+
+                    html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (15d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
+
+                # --- CONSOLIDACIÓN DE TIENDAS (Stock > 0 O Ventas > 0) ---
+                tiendas_data = {}
+                for _, fila in grupo.iterrows():
+                    t_nom = str(fila['name_tienda']).strip()
+                    tiendas_data[t_nom] = {
+                        'cant': int(fila.get('n_cantidad', 0)),
+                        'codigo_barras': str(fila.get('c_codarticulo', 'N/A')).strip()
+                    }
+                
+                # Agregar tiendas que hicieron ventas pero tienen 0 stock (o no vinieron en la consulta)
+                for t_nom, c_v in dict_ventas_tienda.items():
+                    if t_nom not in tiendas_data and c_v > 0:
+                        tiendas_data[t_nom] = {
+                            'cant': 0,
+                            'codigo_barras': str(cod_art).strip()
+                        }
+                
+                # Filtrar lista final
+                tiendas_a_mostrar = {k: v for k, v in tiendas_data.items() if v['cant'] > 0 or dict_ventas_tienda.get(k, 0) > 0}
+
+                # Si el código no tiene stock ni ventas en ninguna tienda, pasamos al siguiente
+                if not tiendas_a_mostrar:
+                    continue 
+
+                productos_mostrados += 1
+
+                if not es_exacto:
+                    st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
+
+                # --- CORRIDA DE TALLAS ---
+                html_corrida_tallas = ""
+                txt_color_header = ""
+
+                raiz_mod, cod_color, talla_actual = descomponer_modelo(referencia, LISTA_COLORES_ORDENADOS)
+                
+                if raiz_mod and cod_color and es_exacto:
+                    nombre_color_desc = DICT_COLORES.get(cod_color, cod_color)
+                    txt_color_header = f' | <b>Color:</b> {nombre_color_desc} ({cod_color})'
+                    prefijo_busqueda = f"{raiz_mod}{cod_color}"
 
                     try:
-                        val_precio = primero.get('n_Precio1')
-                        precio = float(val_precio) if val_precio and not pd.isna(val_precio) else 0.0
-                    except:
-                        precio = 0.0
+                        res_hermanas = supabase.table("tblExistencias").select("c_Modelo, n_cantidad, name_tienda, sesion_id").ilike("c_Modelo", f"{prefijo_busqueda}%").execute()
+                        
+                        dict_cantidades_talla = {}
 
-                    ref_limpia = referencia.upper()
-                    es_exacto = cod.isdigit() or (cod.strip() == ref_limpia.strip())
+                        if res_hermanas.data:
+                            df_herm = pd.DataFrame(res_hermanas.data)
+                            df_herm = df_herm[df_herm.apply(es_dato_nuevo, axis=1)]
+                            df_herm = df_herm[df_herm['n_cantidad'] > 0]
 
-                    if not es_exacto:
-                        st.warning(f"⚠️ **Coincidencia parcial:** Se muestra **{referencia}** porque contiene tu búsqueda **'{cod}'**.")
+                            for _, f_herm in df_herm.iterrows():
+                                mod_herm = f_herm.get('c_Modelo')
+                                r_h, c_h, t_h = descomponer_modelo(mod_herm, LISTA_COLORES_ORDENADOS)
+                                if r_h == raiz_mod and c_h == cod_color and t_h:
+                                    cant_h = int(f_herm.get('n_cantidad', 0))
+                                    dict_cantidades_talla[t_h] = dict_cantidades_talla.get(t_h, 0) + cant_h
 
-                    # --- ROTACIÓN ---
-                    dict_ventas_tienda = {}
-                    total_cadena = 0
-                    ritmo_cadena = 0.0
-                    html_rotacion_global = ""
+                        if talla_actual not in dict_cantidades_talla:
+                            dict_cantidades_talla[talla_actual] = int(grupo['n_cantidad'].sum())
 
-                    if es_exacto:
-                        try:
-                            res_ventas = supabase.table("tblventas30d").select("name_tienda, cant_vendida_30d").eq("c_codarticulo", str(cod_art).strip()).execute()
-                            if res_ventas.data:
-                                for v in res_ventas.data:
-                                    t_nom = str(v.get('name_tienda', '')).strip()
+                        if len(dict_cantidades_talla) > 0:
+                            tallas_ordenadas = sorted(dict_cantidades_talla.keys(), key=criterio_orden_talla)
 
-                                    if "DISTRIBUIDORA" in t_nom.upper():
-                                        continue
+                            bloques_tallas = []
+                            for t_item in tallas_ordenadas:
+                                es_activa = (t_item == talla_actual)
+                                clase_activa = " caja-talla-activa" if es_activa else ""
+                                estrella = " ★" if es_activa else ""
+                                cant_total_talla = dict_cantidades_talla.get(t_item, 0)
+                                clase_agotada = " talla-agotada" if cant_total_talla == 0 else ""
 
-                                    c_v = int(v.get('cant_vendida_30d', 0))
-                                    dict_ventas_tienda[t_nom] = c_v
-                                    total_cadena += c_v
-
-                                ritmo_cadena = round(total_cadena / 15.0, 1)
-                        except Exception:
-                            pass
-
-                        html_rotacion_global = f'<div class="badge-rotacion">📊 Ventas tiendas (15d): <b>{total_cadena} und</b> | Ritmo: <b>{ritmo_cadena} und/día</b></div>'
-
-                    # --- CORRIDA DE TALLAS ---
-                    html_corrida_tallas = ""
-                    txt_color_header = ""
-
-                    raiz_mod, cod_color, talla_actual = descomponer_modelo(referencia, LISTA_COLORES_ORDENADOS)
-                    
-                    if raiz_mod and cod_color and es_exacto:
-                        nombre_color_desc = DICT_COLORES.get(cod_color, cod_color)
-                        txt_color_header = f' | <b>Color:</b> {nombre_color_desc} ({cod_color})'
-                        prefijo_busqueda = f"{raiz_mod}{cod_color}"
-
-                        try:
-                            res_hermanas = supabase.table("tblExistencias").select("c_Modelo, n_cantidad, name_tienda, sesion_id").ilike("c_Modelo", f"{prefijo_busqueda}%").execute()
-                            
-                            dict_cantidades_talla = {}
-
-                            if res_hermanas.data:
-                                df_herm = pd.DataFrame(res_hermanas.data)
-                                df_herm = df_herm[df_herm.apply(es_dato_nuevo, axis=1)]
-                                df_herm = df_herm[df_herm['n_cantidad'] > 0]
-
-                                for _, f_herm in df_herm.iterrows():
-                                    mod_herm = f_herm.get('c_Modelo')
-                                    r_h, c_h, t_h = descomponer_modelo(mod_herm, LISTA_COLORES_ORDENADOS)
-                                    if r_h == raiz_mod and c_h == cod_color and t_h:
-                                        cant_h = int(f_herm.get('n_cantidad', 0))
-                                        dict_cantidades_talla[t_h] = dict_cantidades_talla.get(t_h, 0) + cant_h
-
-                            # Oñemoinge talla ko'ag̃agua oĩ meme hag̃ua
-                            if talla_actual not in dict_cantidades_talla:
-                                dict_cantidades_talla[talla_actual] = int(grupo['n_cantidad'].sum())
-
-                            if len(dict_cantidades_talla) > 0:
-                                tallas_ordenadas = sorted(dict_cantidades_talla.keys(), key=criterio_orden_talla)
-
-                                bloques_tallas = []
-                                for t_item in tallas_ordenadas:
-                                    es_activa = (t_item == talla_actual)
-                                    clase_activa = " caja-talla-activa" if es_activa else ""
-                                    estrella = " ★" if es_activa else ""
-                                    cant_total_talla = dict_cantidades_talla.get(t_item, 0)
-                                    clase_agotada = " talla-agotada" if cant_total_talla == 0 else ""
-
-                                    bloques_tallas.append(
-                                        f'<div class="caja-talla{clase_activa}{clase_agotada}">'
-                                        f'<div class="talla-label">T.{t_item}{estrella}</div>'
-                                        f'<div class="talla-cant">({cant_total_talla})</div>'
-                                        f'</div>'
-                                    )
-
-                                html_corrida_tallas = (
-                                    f'<div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color);">'
-                                    f'<div class="subtexto">📐 CORRIDA DE TALLAS — {nombre_color_desc} ({cod_color})</div>'
-                                    f'<div class="contenedor-corrida">{"".join(bloques_tallas)}</div>'
+                                bloques_tallas.append(
+                                    f'<div class="caja-talla{clase_activa}{clase_agotada}">'
+                                    f'<div class="talla-label">T.{t_item}{estrella}</div>'
+                                    f'<div class="talla-cant">({cant_total_talla})</div>'
                                     f'</div>'
                                 )
-                        except Exception:
-                            pass
 
-                    # Cabecera de Producto
-                    st.markdown(
-                        f'<div class="card-producto">'
-                        f'<div class="subtexto">📦 PRODUCTO</div>'
-                        f'<div style="padding-bottom: 4px;"><b>Referencia:</b> {referencia}</div>'
-                        f'<div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>'
-                        f'<div style="padding-bottom: 4px;"><b>Marca:</b> {marca}{txt_color_header}</div>'
-                        f'<div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>'
-                        f'{html_rotacion_global}'
-                        f'{html_corrida_tallas}'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-
-                    dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
-
-                    for _, fila in grupo.iterrows():
-                        tienda_limpia = str(fila['name_tienda']).strip()
-                        cant = int(fila['n_cantidad'])
-                        codigo_barras = str(fila.get('c_codarticulo', 'N/A')).strip()
-
-                        f_valida_raw = dict_sinc.get(tienda_limpia)
-                        sinc_txt = "---"
-
-                        if f_valida_raw:
-                            try:
-                                f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
-                                sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
-                            except:
-                                sinc_txt = f_valida_raw
-
-                        emoji_stock = "✅" if cant > 3 else "⚠️"
-
-                        html_rotacion_tienda = ""
-                        if es_exacto and "DISTRIBUIDORA" not in tienda_limpia.upper():
-                            v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
-                            ritmo_t = round(v_tienda / 15.0, 1)
-
-                            if v_tienda > 0:
-                                dias_cob = int(cant / (v_tienda / 15.0))
-                                txt_cobertura = f"⏱️ Cobertura: <b>~{dias_cob} días</b>"
-                            else:
-                                txt_cobertura = "⏱️ Cobertura: <b>Estancado</b>"
-
-                            html_rotacion_tienda = (
-                                f'<div style="padding-bottom: 2px; font-size: 0.9em; opacity: 0.9;">'
-                                f'📈 <b>Ventas 15d:</b> {v_tienda} und ({ritmo_t}/día)'
-                                f'</div>'
-                                f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">'
-                                f'{txt_cobertura}'
+                            html_corrida_tallas = (
+                                f'<div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color);">'
+                                f'<div class="subtexto">📐 CORRIDA DE TALLAS — {nombre_color_desc} ({cod_color})</div>'
+                                f'<div class="contenedor-corrida">{"".join(bloques_tallas)}</div>'
                                 f'</div>'
                             )
+                    except Exception:
+                        pass
 
-                        html_exis = (
-                            f'<div class="card-existencia">'
-                            f'<div class="subtexto">🏭 EXISTENCIA</div>'
-                            f'<div style="padding-bottom: 6px;"><b>Código:</b> <span>{codigo_barras}</span></div>'
-                            f'<div style="padding-bottom: 6px;"><b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span></div>'
-                            f'<div style="padding-bottom: 6px; font-weight: bold;">Stock: {emoji_stock} {cant}</div>'
-                            f'{html_rotacion_tienda}'
-                            f'<div class="footer-sinc"><b>Actualización:</b> <span>{sinc_txt}</span></div>'
+                # Cabecera de Producto
+                st.markdown(
+                    f'<div class="card-producto">'
+                    f'<div class="subtexto">📦 PRODUCTO</div>'
+                    f'<div style="padding-bottom: 4px;"><b>Referencia:</b> {referencia}</div>'
+                    f'<div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>'
+                    f'<div style="padding-bottom: 4px;"><b>Marca:</b> {marca}{txt_color_header}</div>'
+                    f'<div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>'
+                    f'{html_rotacion_global}'
+                    f'{html_corrida_tallas}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+                dias_semana = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
+
+                # Iteramos sobre las tiendas validadas (tienen stock o ventas)
+                for tienda_limpia, info in tiendas_a_mostrar.items():
+                    cant = info['cant']
+                    codigo_barras = info['codigo_barras']
+
+                    f_valida_raw = dict_sinc.get(tienda_limpia)
+                    sinc_txt = "---"
+
+                    if f_valida_raw:
+                        try:
+                            f_dt = pd.to_datetime(f_valida_raw).replace(tzinfo=None)
+                            sinc_txt = f"{dias_semana[f_dt.weekday()]} {f_dt.strftime('%d/%m/%Y %I:%M %p')}"
+                        except:
+                            sinc_txt = f_valida_raw
+
+                    # Cambio visual: ❌ si el stock está en cero
+                    emoji_stock = "✅" if cant > 3 else ("⚠️" if cant > 0 else "❌")
+
+                    html_rotacion_tienda = ""
+                    if es_exacto and "DISTRIBUIDORA" not in tienda_limpia.upper():
+                        v_tienda = dict_ventas_tienda.get(tienda_limpia, 0)
+                        ritmo_t = round(v_tienda / 15.0, 1)
+
+                        if v_tienda > 0 and cant > 0:
+                            dias_cob = int(cant / (v_tienda / 15.0))
+                            txt_cobertura = f"⏱️ Cobertura: <b>~{dias_cob} días</b>"
+                        elif v_tienda > 0 and cant == 0:
+                            txt_cobertura = "⏱️ Cobertura: <b style='color:#D32F2F;'>Agotado (Requiere Reposición)</b>"
+                        else:
+                            txt_cobertura = "⏱️ Cobertura: <b>Estancado</b>"
+
+                        html_rotacion_tienda = (
+                            f'<div style="padding-bottom: 2px; font-size: 0.9em; opacity: 0.9;">'
+                            f'📈 <b>Ventas 15d:</b> {v_tienda} und ({ritmo_t}/día)'
+                            f'</div>'
+                            f'<div style="padding-bottom: 6px; font-size: 0.9em; opacity: 0.9;">'
+                            f'{txt_cobertura}'
                             f'</div>'
                         )
-                        st.markdown(html_exis, unsafe_allow_html=True)
 
-                    st.write("")
+                    html_exis = (
+                        f'<div class="card-existencia">'
+                        f'<div class="subtexto">🏭 EXISTENCIA</div>'
+                        f'<div style="padding-bottom: 6px;"><b>Código:</b> <span>{codigo_barras}</span></div>'
+                        f'<div style="padding-bottom: 6px;"><b>Tienda:</b> <span class="tienda-highlight">{tienda_limpia}</span></div>'
+                        f'<div style="padding-bottom: 6px; font-weight: bold;">Stock: {emoji_stock} {cant}</div>'
+                        f'{html_rotacion_tienda}'
+                        f'<div class="footer-sinc"><b>Actualización:</b> <span>{sinc_txt}</span></div>'
+                        f'</div>'
+                    )
+                    st.markdown(html_exis, unsafe_allow_html=True)
+
+                st.write("")
+
+            if productos_mostrados == 0:
+                st.warning("📍 Producto sin existencia ni ventas recientes.")
 
         else:
             if buscar:
