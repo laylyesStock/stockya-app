@@ -378,11 +378,20 @@ if cod:
                     except Exception:
                         pass
 
+                # --- NUEVO: Extraer indicador y armar etiqueta ---
+                try:
+                    val_nuevo = primero.get('es_nuevo', 0)
+                    es_articulo_nuevo = int(val_nuevo) if pd.notna(val_nuevo) else 0
+                except:
+                    es_articulo_nuevo = 0
+                
+                etiqueta_nuevo = ' <span style="background-color: #FFF3E0; color: #E65100; padding: 2px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; margin-left: 8px; border: 1px solid #FFE0B2;">🌟 NUEVA COLECCIÓN</span>' if es_articulo_nuevo == 1 else ""
+
                 # Cabecera de Producto
                 st.markdown(
                     f'<div class="card-producto">'
                     f'<div class="subtexto">📦 PRODUCTO</div>'
-                    f'<div style="padding-bottom: 4px;"><b>Referencia:</b> {referencia}</div>'
+                    f'<div style="padding-bottom: 4px; display: flex; align-items: center;"><b>Referencia:</b> <span style="margin-left: 5px;">{referencia}</span> {etiqueta_nuevo}</div>'
                     f'<div style="padding-bottom: 4px;"><b>Descripción:</b> {descripcion}</div>'
                     f'<div style="padding-bottom: 4px;"><b>Marca:</b> {marca}{txt_color_header}</div>'
                     f'<div style="font-size: 1.2em; font-weight: bold; margin-top: 6px;">Precio: ${precio:,.2f}</div>'
